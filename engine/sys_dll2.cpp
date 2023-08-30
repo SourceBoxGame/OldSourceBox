@@ -63,6 +63,7 @@
 #include "appframework/IAppSystemGroup.h"
 #include "tier0/systeminformation.h"
 #include "host_cmd.h"
+#include "qscript/qscript.h"
 #ifdef _WIN32
 #include "VGuiMatSurface/IMatSystemSurface.h"
 #endif
@@ -109,6 +110,7 @@
 IDedicatedExports *dedicated = NULL;
 extern CreateInterfaceFn g_AppSystemFactory;
 IHammer *g_pHammer = NULL;
+IQScript *g_pQScript = NULL;
 IPhysics *g_pPhysics = NULL;
 ISourceVirtualReality *g_pSourceVR = NULL;
 #if defined( USE_SDL )
@@ -1043,6 +1045,9 @@ bool CEngineAPI::Connect( CreateInterfaceFn factory )
 	
 	ConnectMDLCacheNotify();
 
+	g_pQScript = (IQScript*)factory(QSCRIPT_INTERFACE_VERSION, NULL);
+
+
 	return true; 
 }
 
@@ -1064,6 +1069,8 @@ void CEngineAPI::Disconnect()
 	BaseClass::Disconnect();
 
 	g_AppSystemFactory = NULL;
+
+	g_pQScript = NULL;
 }
 
 

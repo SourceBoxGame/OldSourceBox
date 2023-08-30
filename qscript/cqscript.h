@@ -16,16 +16,18 @@ class CQScript : public IQScript
 public:
 	CQScript();
 	virtual void Initialize();
+	virtual bool Connect(CreateInterfaceFn factory);
 	virtual InitReturnVal_t Init();
 	virtual void Shutdown();
 	virtual QScriptModule CreateModule(const char* name);
-	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, void* func);
+	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, void* func);
+	virtual const char* GetArgString(QScriptArgs args, int argnum);
 private:
-	void AddScriptingInterface(const char* name);
+	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
 	void ImportModules();
 
 	CUtlVector<QModule*>* m_modules;
-	CUtlVector<IBaseScriptingInterface*> m_interfaces;
+	CUtlVector<IBaseScriptingInterface*>* m_interfaces;
 	
 };
 

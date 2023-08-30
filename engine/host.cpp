@@ -122,6 +122,7 @@
 #include "soundservice.h"
 #include "profile.h"
 #include "steam/isteamremotestorage.h"
+#include "qscript/qscript.h"
 #if defined( _X360 )
 #include "xbox/xbox_win32stubs.h"
 #include "audio_pch.h"
@@ -3876,7 +3877,7 @@ int Host_GetServerCount( void )
 	// return the same count that demo will use
 	return gHostSpawnCount;
 }
-
+extern IQScript *g_pQScript;
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -3900,6 +3901,7 @@ void Host_PostInit()
 		// vgui needs other systems to finalize
 		EngineVGui()->PostInit();
 	}
+	g_pQScript->Initialize();
 
 #if defined( LINUX ) && !defined ANDROID
 	const char en_US[] = "en_US.UTF-8";
@@ -4067,6 +4069,10 @@ bool DLL_LOCAL Host_IsSecureServerAllowed()
 
 	return g_bAllowSecureServers;
 }
+
+
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

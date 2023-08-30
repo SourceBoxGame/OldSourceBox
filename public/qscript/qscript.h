@@ -15,11 +15,14 @@ abstract_class IQScript : public CBaseAppSystem<IAppSystem>
 {
 public:
     virtual void Initialize() = 0;
+    virtual bool Connect(CreateInterfaceFn factory) = 0;
     virtual InitReturnVal_t Init() = 0;
     virtual void Shutdown() = 0;
     virtual QScriptModule CreateModule(const char* name) = 0;
-    virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, void* func) = 0;
+    virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, void* func) = 0;
+    virtual const char* GetArgString(QScriptArgs args, int argnum) = 0;
 };
+
 
 
 #endif

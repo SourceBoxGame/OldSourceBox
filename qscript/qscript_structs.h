@@ -8,6 +8,7 @@
 struct QFunction
 {
 	const char* name;
+	const char* args;
 	void* func;
 };
 
@@ -15,6 +16,13 @@ struct QModule
 {
 	const char* name;
 	CUtlVector<QFunction*>* functions;
+};
+
+struct QArgs
+{
+	int count;
+	const char* types;
+	void** args;
 };
 
 #endif
