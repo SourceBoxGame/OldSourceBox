@@ -40,6 +40,7 @@ def build(bld):
 		'game_controls',
 		'../../common',
 		'../../public',
+		'../../public/qscript',
 		'../../public/tier0',
 		'../../public/tier1',
 		'../../vgui2/include',

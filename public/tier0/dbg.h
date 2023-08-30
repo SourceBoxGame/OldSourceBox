@@ -445,6 +445,7 @@ DBG_INTERFACE struct SDL_Window * GetAssertDialogParent();
 
 #if !defined( _X360 ) || !defined( _RETAIL )
 
+
 /* These are always compiled in */
 DBG_INTERFACE void Msg( PRINTF_FORMAT_STRING const tchar* pMsg, ... ) FMTFUNCTION( 1, 2 );
 DBG_INTERFACE void DMsg( const tchar *pGroupName, int level, PRINTF_FORMAT_STRING const tchar *pMsg, ... ) FMTFUNCTION( 3, 4 );

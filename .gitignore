@@ -42,3 +42,4 @@ build
 *.lastbuildstate
 source-engine.unsuccessfulbuild
 patcher
+*.filters

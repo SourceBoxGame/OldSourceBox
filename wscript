@@ -30,6 +30,7 @@ Context.Context.line_just = 55 # should fit for everything on 80x26
 
 projects={
 	'game': [
+		'SourceBoxCPython/Python',
 		'appframework',
 		'bitmap',
 		'choreoobjects',
@@ -41,7 +42,7 @@ projects={
 		'filesystem',
 		'game/client',
 		'game/server',
-        'game/gamepadui',
+		'game/gamepadui',
 		'gameui',
 		'inputsystem',
 		'ivp/havana',
@@ -58,7 +59,7 @@ projects={
 		'materialsystem/stdshaders',
 		'mathlib',
 		'particles',
-        'raytrace',
+		'raytrace',
 		'scenefilecache',
 		'serverbrowser',
 		'soundemittersystem',
@@ -81,6 +82,10 @@ projects={
 		'utils/vtex',
 		'unicode',
 		'video',
+		'qscript',
+		#'luainterface',
+		#'squirrelinterface',
+		'pythoninterface'
 		#'vscript'
 	],
 	'tests': [

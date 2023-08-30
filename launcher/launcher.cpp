@@ -59,6 +59,7 @@
 #include "sourcevr/isourcevirtualreality.h"
 #include "tier1/KeyValues.h"
 #include "tier0/basetypes.h"
+#include "qscript/qscript.h"
 
 #define VERSION_SAFE_STEAM_API_INTERFACES
 #include "steam/steam_api.h"
@@ -671,6 +672,7 @@ bool CSourceAppSystemGroup::Create()
 	AppSystemInfo_t appSystems[] = 
 	{
 		{ "engine" DLL_EXT_STRING,			CVAR_QUERY_INTERFACE_VERSION },	// NOTE: This one must be first!!
+		{ "qscript" DLL_EXT_STRING,			QSCRIPT_INTERFACE_VERSION },
 		{ "inputsystem" DLL_EXT_STRING,		INPUTSYSTEM_INTERFACE_VERSION },
 		{ "materialsystem" DLL_EXT_STRING,	MATERIAL_SYSTEM_INTERFACE_VERSION },
 		{ "datacache" DLL_EXT_STRING,		DATACACHE_INTERFACE_VERSION },
@@ -684,7 +686,6 @@ bool CSourceAppSystemGroup::Create()
 		{ "vguimatsurface" DLL_EXT_STRING,	VGUI_SURFACE_INTERFACE_VERSION },
 		{ "vgui2" DLL_EXT_STRING,			VGUI_IVGUI_INTERFACE_VERSION },
 		{ "engine" DLL_EXT_STRING,			VENGINE_LAUNCHER_API_VERSION },
-
 		{ "", "" }							// Required to terminate the list
 	};
 
