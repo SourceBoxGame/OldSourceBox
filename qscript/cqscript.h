@@ -22,6 +22,8 @@ public:
 	virtual QScriptModule CreateModule(const char* name);
 	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, void* func);
 	virtual const char* GetArgString(QScriptArgs args, int argnum);
+	virtual int GetArgInt(QScriptArgs args, int argnum);
+	virtual float GetArgFloat(QScriptArgs args, int argnum);
 private:
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
 	void ImportModules();

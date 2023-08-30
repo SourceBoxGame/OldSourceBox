@@ -91,6 +91,15 @@ const char* CQScript::GetArgString(QScriptArgs args, int argnum)
     return ((const char**)(((QArgs*)args)->args))[argnum];
 }
 
+int CQScript::GetArgInt(QScriptArgs args, int argnum)
+{
+    return ((int*)(((QArgs*)args)->args))[argnum];
+}
+
+float CQScript::GetArgFloat(QScriptArgs args, int argnum)
+{
+    return ((float*)(((QArgs*)args)->args))[argnum];
+}
 
 
 
