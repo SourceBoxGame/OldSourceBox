@@ -11,11 +11,12 @@ SourceBox is based on the nillerusr fork of the 2018 engine leak.
 - Portal 1
 - Counter-Strike: Source (WIP)
 - GamepadUI
+- Python (QScript)
 
 # Current tasks:
 - Implement most games
-- Add Lua
-- ~Add Squirrel~ we have it now
+- Add Lua (QScript)
+- Add Squirrel (QScript)
 - Add VJolt (and fix it)
 
 # How to Build?
