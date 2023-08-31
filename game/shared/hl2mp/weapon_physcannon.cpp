@@ -968,6 +968,11 @@ class CPlayerPickupController : public CBaseEntity
 public:
 	void Init(CBasePlayer* pPlayer, CBaseEntity* pObject);
 	void Shutdown(bool bThrown = false);
+#ifndef CLIENT_DLL
+	//fix by @NicknineTheEagle
+	virtual int ShouldTransmit(const CCheckTransmitInfo* pInfo);
+	virtual int UpdateTransmitState(void);
+#endif
 	bool OnControls(CBaseEntity* pControls) { return true; }
 	void Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 	void OnRestore()
@@ -1125,6 +1130,32 @@ void CPlayerPickupController::Shutdown(bool bThrown)
 #endif
 }
 
+#ifndef CLIENT_DLL
+//fix by @NicknineTheEagle
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CPlayerPickupController::UpdateTransmitState()
+{
+	return SetTransmitState(FL_EDICT_ALWAYS);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CPlayerPickupController::ShouldTransmit(const CCheckTransmitInfo* pInfo)
+{
+	// Always transmit to the owning player.
+	if (m_pPlayer && pInfo->m_pClientEnt == m_pPlayer->edict())
+	{
+		return FL_EDICT_ALWAYS;
+	}
+
+	return BaseClass::ShouldTransmit(pInfo);
+}
+
+#endif // !CLIENT
 
 void CPlayerPickupController::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
 {
