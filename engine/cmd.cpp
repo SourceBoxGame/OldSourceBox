@@ -660,7 +660,6 @@ void Cmd_Exec_f( const CCommand &args )
 		free( original_f );
 	}
 
-	ConDMsg( "execing %s\n", szFile );
 
 	// check to make sure we're not going to overflow the cmd_text buffer
 	CommandHandle_t hCommand = s_CommandBuffer.GetNextCommandHandle();

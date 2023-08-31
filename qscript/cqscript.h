@@ -20,7 +20,7 @@ public:
 	virtual InitReturnVal_t Init();
 	virtual void Shutdown();
 	virtual QScriptModule CreateModule(const char* name);
-	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, void* func);
+	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, QCFunc func);
 	virtual const char* GetArgString(QScriptArgs args, int argnum);
 	virtual int GetArgInt(QScriptArgs args, int argnum);
 	virtual float GetArgFloat(QScriptArgs args, int argnum);

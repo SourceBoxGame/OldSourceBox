@@ -4,13 +4,7 @@
 #pragma once
 #endif
 #include "utlvector.h"
-
-struct QFunction
-{
-	const char* name;
-	const char* args;
-	void* func;
-};
+#include "qscript_cstructs.h"
 
 struct QModule
 {
@@ -18,11 +12,5 @@ struct QModule
 	CUtlVector<QFunction*>* functions;
 };
 
-struct QArgs
-{
-	int count;
-	const char* types;
-	void** args;
-};
 
 #endif

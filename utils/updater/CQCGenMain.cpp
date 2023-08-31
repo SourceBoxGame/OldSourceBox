@@ -621,7 +621,7 @@ void GameDownloadHandler::OnDownloadComplete(CHttpDownloader* pDownloader, const
 	}
 	catch (const bit7z::BitException& ex)
 	{
-		::MessageBoxA(0,"%s\n",ex.what(),MB_OK);
+		::MessageBoxA(0, ex.what(),"Updater error", MB_OK);
 		exit(0);
 		return;
 	}

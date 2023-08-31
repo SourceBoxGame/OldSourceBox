@@ -65,7 +65,7 @@ void CQScript::Shutdown()
     
 }
 
-QScriptFunction CQScript::CreateModuleFunction(QScriptModule module, const char* name, const char* args, void* funcptr)
+QScriptFunction CQScript::CreateModuleFunction(QScriptModule module, const char* name, const char* args, QCFunc funcptr)
 {
     QModule* mod = (QModule*)module;
     QFunction* func = new QFunction();
