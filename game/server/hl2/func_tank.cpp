@@ -686,6 +686,28 @@ CBaseEntity *CFuncTank::FindTarget( string_t targetName, CBaseEntity *pActivator
 	return gEntList.FindEntityGenericNearest( STRING( targetName ), GetAbsOrigin(), 0, this, pActivator );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CFuncTank::UpdateTransmitState()
+{
+	return SetTransmitState(FL_EDICT_FULLCHECK);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CFuncTank::ShouldTransmit(const CCheckTransmitInfo* pInfo)
+{
+	// Always transmit to the controlling player.
+	CBaseCombatCharacter* pController = m_hController.Get();
+	if (pController && pController->IsPlayer() && pInfo->m_pClientEnt == pController->edict())
+	{
+		return FL_EDICT_ALWAYS;
+	}
+
+	return BaseClass::ShouldTransmit(pInfo);
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Caches entity key values until spawn is called.
@@ -2952,6 +2974,7 @@ void CFuncTankAirboatGun::StartFiring()
 		CSoundEnvelopeController *pController = &CSoundEnvelopeController::GetController();
 		float flVolume = pController->SoundGetVolume( m_pGunFiringSound );
 		pController->SoundChangeVolume( m_pGunFiringSound, 1.0f, 0.1f * (1.0f - flVolume) );
+
 		m_bIsFiring = true;
 	}
 }
@@ -2974,15 +2997,23 @@ void CFuncTankAirboatGun::StopFiring()
 //-----------------------------------------------------------------------------
 void CFuncTankAirboatGun::ControllerPostFrame( void )
 {
+
+	int bulletCount = (gpGlobals->curtime - m_fireLast) * m_fireRate;
+	Vector forward;
+	AngleVectors(GetAbsAngles(), &forward);
+
 	if ( IsPlayerManned() )
 	{
+		
 		CBasePlayer *pPlayer = static_cast<CBasePlayer*>( GetController() );
 		if ( pPlayer->m_nButtons & IN_ATTACK )
 		{
+			
 			StartFiring();
 		}
 		else
 		{
+			
 			StopFiring();
 		}
 	}
