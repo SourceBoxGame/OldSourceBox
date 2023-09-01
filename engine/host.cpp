@@ -3883,6 +3883,8 @@ extern IQScript *g_pQScript;
 //-----------------------------------------------------------------------------
 void Host_PostInit()
 {
+	g_pQScript->Initialize();
+
 	if ( serverGameDLL )
 	{
 		serverGameDLL->PostInit();
@@ -3901,7 +3903,6 @@ void Host_PostInit()
 		// vgui needs other systems to finalize
 		EngineVGui()->PostInit();
 	}
-	g_pQScript->Initialize();
 
 #if defined( LINUX ) && !defined ANDROID
 	const char en_US[] = "en_US.UTF-8";

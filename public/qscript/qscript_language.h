@@ -21,6 +21,7 @@ public:
     virtual bool Connect(CreateInterfaceFn factory) = 0;
     virtual void Shutdown() = 0;
     virtual void ImportModules(CUtlVector<QModule*>* modules) = 0;
+    virtual void LoadMod(const char* path) = 0;
 };
 
 

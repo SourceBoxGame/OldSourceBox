@@ -1,6 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include "cqscript.h"
-#include "Windows.h"
+#include "filesystem.h"
 
 static CQScript s_QScript;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION, s_QScript);
@@ -8,7 +8,7 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION,
 
 
 
-
+IFileSystem* g_pFullFileSystem = 0;
 
 
 // singleton accessor
@@ -49,6 +49,7 @@ bool CQScript::Connect(CreateInterfaceFn factory)
 {
     m_interfaces = new CUtlVector<IBaseScriptingInterface*>();
     m_modules = new CUtlVector<QModule*>();
+    g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
     AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
     AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
@@ -101,6 +102,65 @@ float CQScript::GetArgFloat(QScriptArgs args, int argnum)
     return ((float*)(((QArgs*)args)->args))[argnum];
 }
 
+void CQScript::LoadFilesInDirectory(const char* folder, const char* filename)
+{
+    FileFindHandle_t findHandle;
+    char searchPath[MAX_PATH];
+    strcpy(searchPath, "mods/");
+    strncat(searchPath, folder,MAX_PATH);
+    strncat(searchPath, "/*",MAX_PATH);
+    const char* pszFileName = g_pFullFileSystem->FindFirst(searchPath, &findHandle);
+    char pszFileNameNoExt[MAX_PATH];
+    while (pszFileName)
+    {
+        if (pszFileName[0] == '.')
+        {
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        if (g_pFullFileSystem->FindIsDirectory(findHandle))
+        {
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        V_StripExtension(pszFileName, pszFileNameNoExt, MAX_PATH);
+        if (V_strcmp(filename, pszFileNameNoExt) == 0)
+        {
+            char pFilePath[MAX_PATH];
+            strcpy(pFilePath, "mods/");
+            strncat(pFilePath, folder, MAX_PATH);
+            V_AppendSlash(pFilePath, MAX_PATH);
+            strncat(pFilePath, pszFileName, MAX_PATH);
+            for (int i = 0; i != m_interfaces->Count(); i++)
+            {
+                m_interfaces->Element(i)->LoadMod(pFilePath);
+            }
+        }
+        pszFileName = g_pFullFileSystem->FindNext(findHandle);
+    }
+}
+
+void CQScript::LoadMods(const char* filename)
+{
+    FileFindHandle_t findHandle;
+    const char* pszFileName = g_pFullFileSystem->FindFirst("mods/*", &findHandle);
+    char pszFileNameNoExt[MAX_PATH];
+    while (pszFileName)
+    {
+        if (pszFileName[0] == '.')
+        {
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        if (g_pFullFileSystem->FindIsDirectory(findHandle))
+        {
+            LoadFilesInDirectory(pszFileName, filename);
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        pszFileName = g_pFullFileSystem->FindNext(findHandle);
+    }
+}
 
 
 

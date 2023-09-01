@@ -1171,6 +1171,7 @@ bool CHLClient::ReplayPostInit()
 void CHLClient::PostInit()
 {
 	IGameSystem::PostInitAllSystems();
+	LoadModsClient();
 
 #ifdef SIXENSE
 	// allow sixnese input to perform post-init operations
