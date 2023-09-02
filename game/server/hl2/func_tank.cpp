@@ -2295,6 +2295,7 @@ const char *CFuncTank::GetTracerType( void )
 //-----------------------------------------------------------------------------
 void CFuncTank::Fire( int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
+	IPredictionSystem::SuppressHostEvents(NULL);
 	// If we have a specific effect handler, apply it's effects
 	if ( m_iEffectHandling == EH_AR2 )
 	{
@@ -2529,9 +2530,9 @@ LINK_ENTITY_TO_CLASS( func_tank, CFuncTankGun );
 //-----------------------------------------------------------------------------
 void CFuncTankGun::Fire( int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
-#ifdef HL2MP
+
 	IPredictionSystem::SuppressHostEvents( NULL );
-#endif
+
 	
 	int i;
 
@@ -2651,6 +2652,7 @@ void CFuncTankPulseLaser::Precache(void)
 //------------------------------------------------------------------------------
 void CFuncTankPulseLaser::Fire( int bulletCount, const Vector &barrelEnd, const Vector &vecForward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
+	IPredictionSystem::SuppressHostEvents(NULL);
 	// --------------------------------------------------
 	//  Get direction vectors for spread
 	// --------------------------------------------------
@@ -2774,6 +2776,7 @@ void CFuncTankLaser::Think( void )
 
 void CFuncTankLaser::Fire( int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
+	IPredictionSystem::SuppressHostEvents(NULL);
 	int i;
 	trace_t tr;
 
@@ -2825,6 +2828,7 @@ void CFuncTankRocket::Precache( void )
 
 void CFuncTankRocket::Fire( int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
+	IPredictionSystem::SuppressHostEvents(NULL);
 	CMissile *pRocket = (CMissile *) CBaseEntity::Create( "rpg_missile", barrelEnd, GetAbsAngles(), this );
 	
 	pRocket->DumbFire();
@@ -3101,6 +3105,7 @@ void CFuncTankAirboatGun::DoImpactEffect( trace_t &tr, int nDamageType )
 
 void CFuncTankAirboatGun::Fire( int bulletCount, const Vector &barrelEnd, const Vector &forward, CBaseEntity *pAttacker, bool bIgnoreSpread )
 {
+	IPredictionSystem::SuppressHostEvents(NULL);
 	CAmmoDef *pAmmoDef = GetAmmoDef();
 	int ammoType = pAmmoDef->Index( "AirboatGun" );
 
