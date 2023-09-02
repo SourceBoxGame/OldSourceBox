@@ -358,7 +358,7 @@ BEGIN_PREDICTION_DATA( CHL1MPWeaponCrossbow )
 #endif
 END_PREDICTION_DATA()
 
-LINK_ENTITY_TO_CLASS( weapon_crossbow, CHL1MPWeaponCrossbow );
+LINK_ENTITY_TO_CLASS( weapon_hl1mp_crossbow, CHL1MPWeaponCrossbow );
 
 PRECACHE_WEAPON_REGISTER( weapon_hl1mp_crossbow );
 
