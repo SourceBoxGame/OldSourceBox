@@ -1,0 +1,68 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib import Utils
+import os
+
+top = '.'
+PROJECT_NAME = 'squirrel'
+
+def options(opt):
+	# stub
+	return
+
+def configure(conf):
+	conf.env.CFLAGS = ["/Z7"]
+	conf.env.CXXFLAGS = ["/Z7"]
+	return
+
+def build(bld):
+	source = [
+			"sqvm.cpp",
+			"sqapi.cpp",
+			"sqbaselib.cpp",
+			"sqclass.cpp",
+			"sqcompiler.cpp",
+			"sqdebug.cpp",
+			"sqfuncstate.cpp",
+			"sqlexer.cpp",
+			"sqmem.cpp",
+			"sqobject.cpp",
+			"sqstate.cpp",
+			"sqtable.cpp",
+			]
+	
+
+	includes = [
+		'.',
+		'../public',
+		'../public/tier0',
+		'../public/tier1',
+		'../public/qscript',
+		'../qscript',
+	]
+	
+	defines = []
+	
+	if bld.env.DEST_OS != "win32":
+		defines += ["SQ_USE_LINUX"]
+	else:
+		defines += ["SQ_USE_WINDOWS"]
+
+	libs = ['tier0']
+
+	install_path = bld.env.LIBDIR
+
+	bld.stlib(
+		source   = source,
+		target   = PROJECT_NAME,
+		name     = PROJECT_NAME,
+		features = 'c',
+		includes = includes,
+		defines  = defines,
+		use      = libs,
+		install_path = install_path,
+		subsystem = bld.env.MSVC_SUBSYSTEM,
+		idx      = bld.get_taskgen_count()
+	)
+
