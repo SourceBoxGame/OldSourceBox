@@ -492,8 +492,8 @@ static int boxgc (lua_State *L) {
 
 
 static const QFunction boxmt[] = {  /* box metamethods */
-   {"__gc", "s", boxgc},
-   {"__close", "s", boxgc}
+   {1,"__gc", "s", boxgc,0},
+   {1,"__close", "s", boxgc,0}
 };
 
 

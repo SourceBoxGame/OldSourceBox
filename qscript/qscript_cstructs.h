@@ -19,9 +19,11 @@ typedef void(*QCFunc)(QScriptArgs);
 
 typedef struct 
 {
+	unsigned char native;
 	const char* name;
 	const char* args;
 	QCFunc func;
+	int etc_data;
 } QFunction;
 
 typedef struct

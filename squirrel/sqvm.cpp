@@ -360,7 +360,7 @@ bool SQVM::Init(SQVM *friendvm, SQInteger stacksize)
     _top = 0;
     if(!friendvm) {
         _roottable = SQTable::Create(_ss(this), 0);
-        sq_base_register(this);
+        //sq_base_register(this);
     }
     else {
         _roottable = friendvm->_roottable;
@@ -1152,34 +1152,36 @@ void SQVM::CallDebugHook(SQInteger type,SQInteger forcedline)
     _debughook = true;
 }
 #include "../qscript/qscript_cstructs.h"
-static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
+__declspec(noinline) static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
 {
+    if (func->native)
+        return ((SQFUNCTION)func->func)(SQ);
     const char* argtypes = func->args;
     if (strlen(argtypes) != sq_gettop(SQ)-1) // TODO : maybe error too
         return 0;
     QArgs* qargs = (QArgs*)malloc(sizeof(QArgs));
     qargs->types = argtypes;
-    qargs->count = sq_gettop(SQ);
+    qargs->count = sq_gettop(SQ) - 1;
     qargs->args = (void**)malloc(qargs->count * sizeof(void*));
     for (int i = 0; i != qargs->count; i++)
     {
         switch (argtypes[i])
         {
         case 's':
-            if (sq_gettype(SQ, i + 1) == OT_STRING)
-                sq_getstring(SQ, i + 1, (const char**)(&qargs->args[i]));
+            if (sq_gettype(SQ, i + 2) == OT_STRING)
+                sq_getstring(SQ, i + 2, (const char**)(&qargs->args[i]));
             else
                 goto failure;
             break;
         case 'i':
-            if (sq_gettype(SQ, i+1) == OT_INTEGER)
-                sq_getinteger(SQ, i + 1, reinterpret_cast<SQInteger*>(&qargs->args[i]));
+            if (sq_gettype(SQ, i + 2) == OT_INTEGER)
+                sq_getinteger(SQ, i + 2, reinterpret_cast<SQInteger*>(&qargs->args[i]));
             else
                 goto failure;
             break;
         case 'f':
-            if (sq_gettype(SQ, i + 1) == OT_FLOAT)
-                sq_getfloat(SQ, i + 1, (float*)(&qargs->args[i]));
+            if (sq_gettype(SQ, i + 2) == OT_FLOAT)
+                sq_getfloat(SQ, i + 2, (float*)(&qargs->args[i]));
             else
                 goto failure;
             break;

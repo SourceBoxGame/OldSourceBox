@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include "qscript_cstructs.h"
 
 static bool str2num(const SQChar *s,SQObjectPtr &res,SQInteger base)
 {
@@ -280,31 +281,31 @@ static SQInteger base_callee(HSQUIRRELVM v)
     return sq_throwerror(v,_SC("no closure in the calls stack"));
 }
 
-static const SQRegFunction base_funcs[]={
+static const QFunction base_funcs[]={
     //generic
-    {_SC("seterrorhandler"),base_seterrorhandler,2, NULL},
-    {_SC("setdebughook"),base_setdebughook,2, NULL},
-    {_SC("enabledebuginfo"),base_enabledebuginfo,2, NULL},
-    {_SC("getstackinfos"),base_getstackinfos,2, _SC(".n")},
-    {_SC("getroottable"),base_getroottable,1, NULL},
-    {_SC("setroottable"),base_setroottable,2, NULL},
-    {_SC("getconsttable"),base_getconsttable,1, NULL},
-    {_SC("setconsttable"),base_setconsttable,2, NULL},
-    {_SC("assert"),base_assert,-2, NULL},
-    {_SC("print"),base_print,2, NULL},
-    {_SC("error"),base_error,2, NULL},
-    {_SC("compilestring"),base_compilestring,-2, _SC(".ss")},
-    {_SC("newthread"),base_newthread,2, _SC(".c")},
-    {_SC("suspend"),base_suspend,-1, NULL},
-    {_SC("array"),base_array,-2, _SC(".n")},
-    {_SC("type"),base_type,2, NULL},
-    {_SC("callee"),base_callee,0,NULL},
-    {_SC("dummy"),base_dummy,0,NULL},
+    {1,_SC("seterrorhandler"),NULL,(QCFunc)base_seterrorhandler,2 },
+    {1,_SC("setdebughook"),NULL,(QCFunc)base_setdebughook,2 },
+    {1,_SC("enabledebuginfo"),NULL,(QCFunc)base_enabledebuginfo,2 },
+    {1,_SC("getstackinfos"),".n",(QCFunc)base_getstackinfos,2 },
+    {1,_SC("getroottable"),NULL,(QCFunc)base_getroottable,1},
+    {1,_SC("setroottable"),NULL,(QCFunc)base_setroottable,2},
+    {1,_SC("getconsttable"),NULL,(QCFunc)base_getconsttable,1},
+    {1,_SC("setconsttable"),NULL,(QCFunc)base_setconsttable,2},
+    {1,_SC("assert"),NULL,(QCFunc)base_assert,-2},
+    {1,_SC("print"),NULL,(QCFunc)base_print,2},
+    {1,_SC("error"),NULL,(QCFunc)base_error,2},
+    {1,_SC("compilestring"),".ss",(QCFunc)base_compilestring,-2},
+    {1,_SC("newthread"),".c",(QCFunc)base_newthread,2},
+    {1,_SC("suspend"),NULL,(QCFunc)base_suspend,-1},
+    {1,_SC("array"),".n",(QCFunc)base_array,-2},
+    {1,_SC("type"),NULL,(QCFunc)base_type,2},
+    {1,_SC("callee"),NULL,(QCFunc)base_callee,0},
+    {1,_SC("dummy"),NULL,(QCFunc)base_dummy,0},
 #ifndef NO_GARBAGE_COLLECTOR
-    {_SC("collectgarbage"),base_collectgarbage,0, NULL},
-    {_SC("resurrectunreachable"),base_resurectureachable,0, NULL},
+    {1,_SC("collectgarbage"),NULL,(QCFunc)base_collectgarbage,0},
+    {1,_SC("resurrectunreachable"),NULL,(QCFunc)base_resurectureachable,0},
 #endif
-    {NULL,(SQFUNCTION)0,0,NULL}
+    {0,NULL,NULL,(QCFunc)0,0}
 };
 
 void sq_base_register(HSQUIRRELVM v)
@@ -313,9 +314,9 @@ void sq_base_register(HSQUIRRELVM v)
     sq_pushroottable(v);
     while(base_funcs[i].name!=0) {
         sq_pushstring(v,base_funcs[i].name,-1);
-        sq_newclosure(v,base_funcs[i].f,0);
+        sq_newclosure(v,(SQFUNCTION)(&base_funcs[i]),0);
         sq_setnativeclosurename(v,-1,base_funcs[i].name);
-        sq_setparamscheck(v,base_funcs[i].nparamscheck,base_funcs[i].typemask);
+        sq_setparamscheck(v,base_funcs[i].etc_data,base_funcs[i].args);
         sq_newslot(v,-3, SQFalse);
         i++;
     }

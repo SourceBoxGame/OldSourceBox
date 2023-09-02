@@ -513,6 +513,10 @@ l_sinline CallInfo *prepCallInfo (lua_State *L, StkId func, int nret,
 
 static int LuaActualCallback(lua_State* L, QFunction* func)
 {
+    if (func->native)
+    {
+        return ((lua_CFunction)(func->func))(L);
+    }
     const char* argtypes = func->args;
     if (strlen(argtypes) != lua_gettop(L)) // TODO : maybe error too
         return 0;
