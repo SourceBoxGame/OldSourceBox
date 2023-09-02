@@ -5,5 +5,6 @@
 #endif
 
 void InitQScriptClient();
+void LoadModsClient();
 
 #endif

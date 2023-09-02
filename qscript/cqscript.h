@@ -24,9 +24,10 @@ public:
 	virtual const char* GetArgString(QScriptArgs args, int argnum);
 	virtual int GetArgInt(QScriptArgs args, int argnum);
 	virtual float GetArgFloat(QScriptArgs args, int argnum);
+	virtual void LoadMods(const char* filename);
 private:
+	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
-	void ImportModules();
 
 	CUtlVector<QModule*>* m_modules;
 	CUtlVector<IBaseScriptingInterface*>* m_interfaces;

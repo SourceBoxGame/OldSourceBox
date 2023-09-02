@@ -29,6 +29,7 @@ public:
     virtual bool Connect(CreateInterfaceFn factory);
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
+    virtual void LoadMod(const char* path);
     void ExecutePython(const char* code);
 };
 
@@ -75,26 +76,32 @@ void CPythonInterface::Shutdown()
 
 
 static CUtlBuffer* codebuffer = 0;
-CON_COMMAND(python_run_file, "The beginning")
+void CPythonInterface::LoadMod(const char* path)
 {
-    if (args.ArgC() == 1)
-    {
-        Msg("Include the path of the file you want to execute!");
+    int len = strlen(path);
+    if (!(path[len - 3] == '.' && path[len - 2] == 'p' && path[len - 1] == 'y'))
         return;
-    }
 
-    if(codebuffer == 0)
+    if (codebuffer == 0)
         codebuffer = new CUtlBuffer();
 
     codebuffer->Clear();
 
-    if(g_pFullFileSystem->ReadFile(args.ArgS(), NULL, *codebuffer))
+    if (g_pFullFileSystem->ReadFile(path, NULL, *codebuffer))
         s_PythonInterface.ExecutePython((const char*)(codebuffer->Base()));
 }
 
 void CPythonInterface::ExecutePython(const char* code)
 {
+    // Create and initialize the new interpreter.
+    assert(save_tstate != NULL);
+    const PyInterpreterConfig config = { 0, 0, 0, 1, 0, 1, (2) };
+
+    PyThreadState* tstate = NULL;
+    PyStatus status = Py_NewInterpreterFromConfig(&tstate, &config);
     PyRun_SimpleString(code);
+    
+
 }
 
 static PyObject* Python_Import_Module(void)

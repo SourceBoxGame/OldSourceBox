@@ -14,6 +14,11 @@ void InitQScriptClient()
 	qscript->CreateModuleFunction(mod, "Msg", "s", QScriptClientMsg);
 }
 
+void LoadModsClient()
+{
+	qscript->LoadMods("autorun_client");
+}
+
 /*
 CON_COMMAND(execute_python, "The beginning")
 {

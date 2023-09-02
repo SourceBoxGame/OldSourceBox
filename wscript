@@ -83,7 +83,8 @@ projects={
 		'unicode',
 		'video',
 		'qscript',
-		#'luainterface',
+		'lua',
+		'luainterface',
 		#'squirrelinterface',
 		'pythoninterface'
 		#'vscript'
