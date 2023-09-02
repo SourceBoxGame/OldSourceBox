@@ -1,2 +1,2 @@
 @echo off
-waf.bat msdev
+waf.bat msvs
