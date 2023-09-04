@@ -283,6 +283,7 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
     }
 
     //sq_seterrorfunc(SQ, errfunc);
+    base_commands(SQ);
 
     if (SQ_FAILED(sq_call(SQ, 1,false,false)))
     {
