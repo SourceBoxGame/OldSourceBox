@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 
+
 #ifndef QSCRIPTDEFS_H
 typedef struct {
 	int unused;
@@ -32,6 +33,14 @@ typedef struct
 	const char* types;
 	void** args;
 } QArgs;
+
+typedef struct
+{
+	void* lang;
+	void* callback;
+	void* object;
+	void* env;
+} QCallback;
 
 
 

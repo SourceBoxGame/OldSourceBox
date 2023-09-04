@@ -932,22 +932,43 @@ LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
 ** function gets the 'nup' elements at the top as upvalues.
 ** Returns with only the table at the stack.
 */
-LUALIB_API void luaL_setfuncs (lua_State *L, const QFunction **l, int nup, int count) {
-  luaL_checkstack(L, nup, "too many upvalues");
-  for (int i = 0; i < count; i++) {  /* fill the table with given functions */
-    if (l[i]->func == NULL)  /* place holder? */
-      lua_pushboolean(L, 0);
-    else {
-      int i;
-      for (i = 0; i < nup; i++)  /* copy upvalues to the top */
-        lua_pushvalue(L, -nup);
-      lua_pushcclosure(L, l[i], nup);  /* closure with those upvalues */
+LUALIB_API void luaL_setfuncs(lua_State* L, const luaL_Reg* l, int nup) {
+    luaL_checkstack(L, nup, "too many upvalues");
+    for (; l->name != NULL; l++) {  /* fill the table with given functions */
+        if (l->func == NULL)  /* place holder? */
+            lua_pushboolean(L, 0);
+        else {
+            int i;
+            for (i = 0; i < nup; i++)  /* copy upvalues to the top */
+                lua_pushvalue(L, -nup);
+            lua_pushcclosure(L, l->func, nup);  /* closure with those upvalues */
+        }
+        lua_setfield(L, -(nup + 2), l->name);
     }
-    lua_setfield(L, -(nup + 2), l[i]->name);
-  }
-  lua_pop(L, nup);  /* remove upvalues */
+    lua_pop(L, nup);  /* remove upvalues */
 }
 
+
+/*
+** set functions from list 'l' into table at top - 'nup'; each
+** function gets the 'nup' elements at the top as upvalues.
+** Returns with only the table at the stack.
+*/
+LUALIB_API void luaL_setfuncsqscript(lua_State* L, const QFunction** l, int nup, int count) {
+    luaL_checkstack(L, nup, "too many upvalues");
+    for (int i = 0; i < count; i++) {  /* fill the table with given functions */
+        if (l[i]->func == NULL)  /* place holder? */
+            lua_pushboolean(L, 0);
+        else {
+            int j;
+            for (j = 0; j < nup; j++)  /* copy upvalues to the top */
+                lua_pushvalue(L, -nup);
+            lua_pushcclosure(L, l[i], nup);  /* closure with those upvalues */
+        }
+        lua_setfield(L, -(nup + 2), l[i]->name);
+    }
+    lua_pop(L, nup);  /* remove upvalues */
+}
 
 /*
 ** ensure that stack[idx][fname] has a table and push that table

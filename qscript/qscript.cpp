@@ -92,6 +92,14 @@ const char* CQScript::GetArgString(QScriptArgs args, int argnum)
     return ((const char**)(((QArgs*)args)->args))[argnum];
 }
 
+char* CQScript::GetArgPermaString(QScriptArgs args, int argnum)
+{
+    const char* name = GetArgString(args, argnum);
+    char* permaname = (char*)malloc(strlen(name) + 1);
+    strcpy(permaname, name);
+    return permaname;
+}
+
 int CQScript::GetArgInt(QScriptArgs args, int argnum)
 {
     return ((int*)(((QArgs*)args)->args))[argnum];
@@ -100,6 +108,10 @@ int CQScript::GetArgInt(QScriptArgs args, int argnum)
 float CQScript::GetArgFloat(QScriptArgs args, int argnum)
 {
     return ((float*)(((QArgs*)args)->args))[argnum];
+}
+QScriptCallback CQScript::GetArgCallback(QScriptArgs args, int argnum)
+{
+    return (QScriptCallback)((QCallback**)(((QArgs*)args)->args))[argnum];
 }
 
 void CQScript::LoadFilesInDirectory(const char* folder, const char* filename)
@@ -163,8 +175,78 @@ void CQScript::LoadMods(const char* filename)
 }
 
 
+void CQScript::LoadModsInDirectory(const char* folder, const char* filename)
+{
+    FileFindHandle_t findHandle;
+    char path[MAX_PATH];
+    const char* pszFileName = g_pFullFileSystem->FindFirst("mods/*", &findHandle);
+    char pszFileNameNoExt[MAX_PATH];
+    while (pszFileName)
+    {
+        if (pszFileName[0] == '.')
+        {
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        if (g_pFullFileSystem->FindIsDirectory(findHandle))
+        {
+            snprintf(path, MAX_PATH, "mods/%s/%s",pszFileName,folder);
+            if (g_pFullFileSystem->IsDirectory(path))
+            {
+                snprintf(path, MAX_PATH, "%s/%s", pszFileName, folder);
+                LoadFilesInDirectory(path, filename);
+            }
+            pszFileName = g_pFullFileSystem->FindNext(findHandle);
+            continue;
+        }
+        pszFileName = g_pFullFileSystem->FindNext(findHandle);
+    }
+}
 
+void CQScript::CallCallback(QScriptCallback callback, QScriptArgs args)
+{
+    QCallback* c = (QCallback*)callback;
+    QArgs* a = (QArgs*)args;
+    ((IBaseScriptingInterface*)c->lang)->CallCallback(c, a);
+}
 
+QScriptArgs CQScript::CreateArgs(const char* types, ...)
+{
+    va_list va;
+    QArgs* args = new QArgs();
+    va_start(va, types);
+    int len = strlen(types);
+    args->args = (void**)malloc(len * sizeof(void*));
+    args->count = len;
+    args->types = types;
+    for (int i = 0; i < len; i++)
+    {
+        switch (types[i])
+        {
+        case 's':
+            args->args[i] = va_arg(va, void*);
+            break;
+        case 'f':
+        case 'i':
+            args->args[i] = (void*)va_arg(va, int);
+            break;
+        default:
+            Warning("Tried to create invalid arg type '%c' at %i.\n", types[i], i);
+            free(args->args);
+            free(args);
+            return NULL;
+        }
+    }
+    return (QScriptArgs)args;
+
+}
+
+void CQScript::FreeArgs(QScriptArgs a)
+{
+    QArgs* args = (QArgs*)a;
+    free(args->args);
+    free(args);
+}
 
 /*
 #define PY_SSIZE_T_CLEAN

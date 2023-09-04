@@ -1152,7 +1152,8 @@ void SQVM::CallDebugHook(SQInteger type,SQInteger forcedline)
     _debughook = true;
 }
 #include "../qscript/qscript_cstructs.h"
-__declspec(noinline) static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
+extern void* current_interface;
+static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
 {
     if (func->native)
         return ((SQFUNCTION)func->func)(SQ);
@@ -1182,6 +1183,26 @@ __declspec(noinline) static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction
         case 'f':
             if (sq_gettype(SQ, i + 2) == OT_FLOAT)
                 sq_getfloat(SQ, i + 2, (float*)(&qargs->args[i]));
+            else
+                goto failure;
+            break;
+        case 'p':
+            if (sq_gettype(SQ, i + 2) == OT_CLOSURE)
+            {
+                QCallback* callback = (QCallback*)malloc(sizeof(QCallback));
+                callback->callback = malloc(sizeof(HSQOBJECT));
+                sq_resetobject((HSQOBJECT*)callback->callback);
+                sq_getstackobj(SQ, i + 2, (HSQOBJECT*)callback->callback);
+                sq_addref(SQ, (HSQOBJECT*)callback->callback);
+                callback->env = SQ;
+                callback->lang = current_interface;
+                sq_getclosureroot(SQ, i + 2);
+                callback->object = malloc(sizeof(HSQOBJECT));
+                sq_resetobject((HSQOBJECT*)callback->object);
+                sq_getstackobj(SQ, -1, (HSQOBJECT*)callback->object);
+                sq_pop(SQ, -1);
+                qargs->args[i] = callback;
+            }
             else
                 goto failure;
             break;

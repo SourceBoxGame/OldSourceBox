@@ -15,11 +15,18 @@
 #include "convar.h"
 #include "tier1.h"
 #include "filesystem.h"
+#include "qscript/qscript.h"
 
+
+extern "C"
+{
+    void* current_interface = 0;
+}
 static int s_python_init_index = 0;
 static PyModuleDef* s_python_modules = 0;
 static PyMethodDef* s_python_methods = 0;
 IFileSystem* g_pFullFileSystem = 0;
+IQScript* g_pQScript = 0;
 
 class CPythonInterface : public IBaseScriptingInterface
 {
@@ -30,6 +37,7 @@ public:
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
     virtual void LoadMod(const char* path);
+    virtual void CallCallback(QCallback* callback, QArgs* args);
     void ExecutePython(const char* code);
 };
 
@@ -49,6 +57,8 @@ bool CPythonInterface::Connect(CreateInterfaceFn factory)
     ConnectTier1Libraries(&factory, 1);
     ConVar_Register();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
+    g_pQScript = (IQScript*)factory(QSCRIPT_INTERFACE_VERSION, NULL);
+    current_interface = this;
     return true;
 }
 
@@ -159,6 +169,37 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
 
         PyImport_AppendInittab(mod->name, Python_Import_Module);
     }
+}
+
+void CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
+{
+    if (args->count)
+    {
+        PyObject* v = PyTuple_New(args->count);
+        for (int i = 0; i != args->count; i++)
+        {
+            switch (args->types[i])
+            {
+            case 'i':
+                PyTuple_SET_ITEM(v, i, PyLong_FromLong((int)args->args[i]));
+                break;
+            case 's':
+                PyTuple_SET_ITEM(v, i, PyUnicode_FromString((const char*)args->args[i]));
+                break;
+            case 'f':
+                PyTuple_SET_ITEM(v, i, PyFloat_FromDouble((double)(*(float*)&args->args[i])));
+                break;
+            default:
+                Py_DECREF(v);
+                return;
+            }
+        }
+        PyObject_Call((PyObject*)callback->callback, v,NULL);
+        Py_DECREF(v);
+    }
+    else
+        PyObject_Call((PyObject*)callback->callback, NULL, NULL);
+    
 }
 
 #endif

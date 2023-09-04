@@ -107,7 +107,9 @@ LUALIB_API void (luaL_addgsub) (luaL_Buffer *b, const char *s,
 LUALIB_API const char *(luaL_gsub) (lua_State *L, const char *s,
                                     const char *p, const char *r);
 
-LUALIB_API void (luaL_setfuncs) (lua_State *L, QFunction **l, int nup, int count);
+LUALIB_API void (luaL_setfuncs) (lua_State *L, luaL_Reg *l, int nup);
+
+LUALIB_API void (luaL_setfuncsqscript) (lua_State *L, QFunction **l, int nup, int count);
 
 LUALIB_API int (luaL_getsubtable) (lua_State *L, int idx, const char *fname);
 

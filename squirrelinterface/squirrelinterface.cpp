@@ -17,6 +17,7 @@
 #include "filesystem.h"
 
 IFileSystem* g_pFullFileSystem = 0;
+void* current_interface = 0;
 
 class CSquirrelInterface : public IBaseScriptingInterface
 {
@@ -27,6 +28,7 @@ public:
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
     virtual void LoadMod(const char* path);
+    virtual void CallCallback(QCallback* callback, QArgs* args);
     void ExecuteSquirrel(const char* code, int size);
 private:
     CUtlVector<QModule*>* m_modules;
@@ -45,6 +47,7 @@ bool CSquirrelInterface::Connect(CreateInterfaceFn factory)
     ConnectTier1Libraries(&factory, 1);
     ConVar_Register();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
+    current_interface = this;
     return true;
 }
 
@@ -151,13 +154,44 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
         sq_poptop(SQ);
     }
     sq_settop(SQ, 0);
-    sq_close(SQ);
 }
 
 
 void CSquirrelInterface::ImportModules(CUtlVector<QModule*>* modules)
 {
     m_modules = modules;
+}
+
+void CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
+{
+    HSQUIRRELVM SQ = (HSQUIRRELVM)callback->env;
+    int top = sq_gettop(SQ);
+    sq_pushobject(SQ, *(HSQOBJECT*)(callback->callback));
+    sq_pushobject(SQ, *(HSQOBJECT*)(callback->object));
+    for (int i = 0; i != args->count; i++)
+    {
+        switch (args->types[i])
+        {
+        case 'i':
+            sq_pushinteger(SQ, (int)args->args[i]);
+            break;
+        case 's':
+            sq_pushstring(SQ, (const char*)args->args[i],strlen((const char*)args->args[i]));
+            break;
+        case 'f':
+            sq_pushfloat(SQ, *(float*)&args->args[i]);
+            break;
+        default:
+            sq_settop(SQ, top);
+            return;
+        }
+    }
+    if (sq_call(SQ, args->count+1, false, false))
+    {
+        const SQChar* str;
+        sq_getstring(SQ, -1, &str);
+        Warning("[Squirrel]: %s\n", str);
+    }
 }
 
 #endif

@@ -33,7 +33,7 @@
 #include "lvm.h"
 #include "lzio.h"
 #include "qscript_cstructs.h"
-
+#include "lauxlib.h"
 
 
 #define errorstatus(s)	((s) > LUA_YIELD)
@@ -510,12 +510,12 @@ l_sinline CallInfo *prepCallInfo (lua_State *L, StkId func, int nret,
   return ci;
 }
 
-
+extern void* current_interface;
 static int LuaActualCallback(lua_State* L, QFunction* func)
 {
     if (func->native)
     {
-        return ((lua_CFunction)(func->func))(L);
+        return ((lua_CFunction)func)(L);
     }
     const char* argtypes = func->args;
     if (strlen(argtypes) != lua_gettop(L)) // TODO : maybe error too
@@ -546,6 +546,19 @@ static int LuaActualCallback(lua_State* L, QFunction* func)
                 float chyba_ciebie_cos_pojebalo = lua_tonumber(L,i+1);
                 qargs->args[i] = (void*)((int)chyba_ciebie_cos_pojebalo);  //WHO FUCKING CARES IF A VOID* IS NOT A FLOAT  THEY ARE THE SAME FUCKING AMOUNT OF BYTES  ACCESSED IN THE EXACT SAME FUCKING WAY  AND IM SUPPOSED TO JUST ACCEPT THAT I CANNOT FORCE THESE FUCKING BYTES INTO THE EXACT SAME AMOUNT OF SPACE IT WOULD TAKE UP BUT WITH A DIFFERENT FUCKING AUTISM LABEL SLAPPED ON TOP OF IT??????????
             }                                                              //we should start writing assembly instead
+            else
+                goto failure;
+            break;
+        case 'p':
+            if (lua_isfunction(L, i + 1))
+            {
+                QCallback* callback = malloc(sizeof(QCallback));
+                lua_pushvalue(L, i + 1);
+                callback->callback = luaL_ref(L, LUA_REGISTRYINDEX);
+                callback->lang = current_interface;
+                callback->env = L;
+                qargs->args[i] = callback;
+            }
             else
                 goto failure;
             break;

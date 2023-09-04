@@ -59,6 +59,7 @@ def build(bld):
 		'tier3',
 		'mathlib',
 		'vstdlib',
+		'qscript',
 		'choreoobjects',
 		'steam_api',
 		'bitmap',

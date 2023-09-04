@@ -21,9 +21,15 @@ public:
     virtual QScriptModule CreateModule(const char* name) = 0;
     virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, QCFunc func) = 0;
     virtual const char* GetArgString(QScriptArgs args, int argnum) = 0;
+    virtual char* GetArgPermaString(QScriptArgs args, int argnum) = 0;
     virtual int GetArgInt(QScriptArgs args, int argnum) = 0;
     virtual float GetArgFloat(QScriptArgs args, int argnum) = 0;
+    virtual QScriptCallback GetArgCallback(QScriptArgs args, int argnum) = 0;
     virtual void LoadMods(const char* filename) = 0;
+    virtual void LoadModsInDirectory(const char* folder, const char* filename) = 0;
+    virtual void CallCallback(QScriptCallback callback, QScriptArgs args) = 0;
+    virtual QScriptArgs CreateArgs(const char* types, ...) = 0;
+    virtual void FreeArgs(QScriptArgs a) = 0;
 };
 
 

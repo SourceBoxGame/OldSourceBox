@@ -1059,7 +1059,6 @@ struct CallS {  /* data to 'f_call' */
 
 
 static void f_call (lua_State *L, void *ud) {
-  dumpstack(L);
   struct CallS *c = cast(struct CallS *, ud);
   luaD_callnoyield(L, c->func, c->nresults);
 }

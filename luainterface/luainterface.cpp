@@ -17,7 +17,10 @@
 #include "filesystem.h"
 
 IFileSystem* g_pFullFileSystem = 0;
-
+extern "C"
+{
+    void* current_interface = 0;
+}
 class CLuaInterface : public IBaseScriptingInterface
 {
 public:
@@ -27,6 +30,7 @@ public:
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
     virtual void LoadMod(const char* path);
+    virtual void CallCallback(QCallback* callback, QArgs* args);
     void ExecuteLua(const char* code, int size);
 private:
     CUtlVector<QModule*>* m_modules;
@@ -45,6 +49,7 @@ bool CLuaInterface::Connect(CreateInterfaceFn factory)
     ConnectTier1Libraries(&factory, 1);
     ConVar_Register();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
+    current_interface = this;
     return true;
 }
 
@@ -112,30 +117,21 @@ void dumpstack(lua_State* L) {
 void CLuaInterface::ExecuteLua(const char* code, int size)
 {
     lua_State* L = luaL_newstate();
-    dumpstack(L);
+    luaL_openlibs(L);
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
         luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-        dumpstack(L);
         lua_getfield(L, -1, mod->name);  /* LOADED[modname] */
-        dumpstack(L);
         if (!lua_toboolean(L, -1)) {  /* package not already loaded? */
             lua_pop(L, 1);  /* remove field */
-            dumpstack(L);
             lua_createtable(L, 0, mod->functions->Count());
-            dumpstack(L);
-            luaL_setfuncs(L, mod->functions->Base(), 0, mod->functions->Count());
-            dumpstack(L);
+            luaL_setfuncsqscript(L, mod->functions->Base(), 0, mod->functions->Count());
             lua_pushvalue(L, -1);
-            dumpstack(L);
             lua_setfield(L, 3, mod->name);  /* LOADED[modname] = module */
         }
-        dumpstack(L);
         lua_remove(L, 1);  /* remove LOADED table */
-        dumpstack(L);
         lua_setglobal(L, mod->name);  /* _G[modname] = module */
-        dumpstack(L);
     }
     luaL_loadstring(L, code);
     if (lua_pcall(L, 0, 0, 0))
@@ -148,6 +144,33 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
 void CLuaInterface::ImportModules(CUtlVector<QModule*>* modules)
 {
     m_modules = modules;
+}
+
+void CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
+{
+    lua_State* L = (lua_State*)callback->env;
+    int top = lua_gettop(L);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, (int)callback->callback);
+    for (int i = 0; i != args->count; i++)
+    {
+        switch (args->types[i])
+        {
+        case 'i':
+            lua_pushinteger(L, (int)args->args[i]);
+            break;
+        case 's':
+            lua_pushstring(L, (const char*)args->args[i]);
+            break;
+        case 'f':
+            lua_pushnumber(L, *(float*)&args->args[i]);
+            break;
+        default:
+            lua_settop(L, top);
+            return;
+        }
+    }
+    if (lua_pcall(L, args->count, 0, 0))
+        Warning("[Lua]: %s\n", lua_tostring(L, -1));
 }
 
 #endif

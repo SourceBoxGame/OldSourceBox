@@ -14,4 +14,6 @@ DECLARE_POINTER_HANDLE(QScriptArgs);
 typedef void(*QCFunc)(QScriptArgs);
 #endif
 
+DECLARE_POINTER_HANDLE(QScriptCallback);
+
 #endif
