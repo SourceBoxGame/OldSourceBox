@@ -189,6 +189,8 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 
 #define _ss(_vm_) (_vm_)->_sharedstate
 
+SQInteger error(HSQUIRRELVM v);
+
 #ifndef NO_GARBAGE_COLLECTOR
 #define _opt_ss(_vm_) (_vm_)->_sharedstate
 #else

@@ -1,5 +1,5 @@
-#ifndef CPYTHONINTERFACE_H
-#define CPYTHONINTERFACE_H
+#ifndef CSQUIRRELINTERFACE_H
+#define CSQUIRRELTERFACE_H
 #ifdef _WIN32
 #pragma once
 #endif
@@ -9,7 +9,9 @@
 #include "qscript_language.h"
 #include "qscript_defs.h"
 #include "qscript_structs.h"
+#include "qscript/qscript.h"
 #include "../squirrel/include/squirrel.h"
+#include "sqvm.h"
 #include "Windows.h"
 #include "utlvector.h"
 #include "convar.h"
@@ -52,10 +54,6 @@ bool CSquirrelInterface::Connect(CreateInterfaceFn factory)
 }
 
 
-
-
-
-
 void CSquirrelInterface::Initialize()
 {
 
@@ -65,10 +63,6 @@ void CSquirrelInterface::Shutdown()
 {
 
 }
-
-
-
-
 
 
 static CUtlBuffer* codebuffer = 0;
@@ -90,7 +84,7 @@ void CSquirrelInterface::LoadMod(const char* path)
 void dumpstack(HSQUIRRELVM SQ) {
     int top = sq_gettop(SQ);
     for (int i = 1; i <= top; i++) {
-        Warning("%d\t%s\t", i, sq_gettype(SQ, i));
+        //Warning("%d\t%s\t", i, sq_gettype(SQ, i));
         switch (sq_gettype(SQ, i)) {
         case OT_FLOAT:
             SQFloat f;
@@ -121,12 +115,156 @@ void dumpstack(HSQUIRRELVM SQ) {
     Warning("\n");
 }
 
+void print(QScriptArgs args)
+{
+    Msg("%s", ((const char**)(((QArgs*)args)->args))[0]); //hacky way to reconnect two commands do the same
+}
+
+void printl(QScriptArgs args)
+{
+
+    Msg("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
+}
+
+void warning(QScriptArgs args)
+{
+    Warning("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
+}
+
+void scriptassert(QScriptArgs args)
+{
+    Assert(((bool*)(((QArgs*)args)->args))[0]);
+}
+
+void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
+{
+    va_list args;
+    va_start(args, str);
+    WarningV(str, args);
+    va_end(args);
+}
+
+void base_commands(HSQUIRRELVM SQ)
+{
+    //QFunction for each native command, that will call an analog
+    QFunction* printfunc = new QFunction();
+    printfunc->name = "print";
+    printfunc->args = "s";
+    printfunc->func = print;
+
+    QFunction* printlfunc = new QFunction();
+    printlfunc->name = "printl";
+    printlfunc->args = "s";
+    printlfunc->func = printl;
+
+    QFunction* warningfunc = new QFunction();
+    warningfunc->name = "warning";
+    warningfunc->args = "s";
+    warningfunc->func = warning;
+
+    QFunction* assertfunc = new QFunction();
+    assertfunc->name = "assert";
+    assertfunc->args = "b";
+    assertfunc->func = (QCFunc)scriptassert;
+
+    QFunction* errorfunc = new QFunction();
+    errorfunc->name = "error";
+    errorfunc->args = "s";
+    errorfunc->func = (QCFunc)error;
+    errorfunc->native = 1;
+
+    //funcs
+    sq_pushstring(SQ, printfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)printfunc, 0);
+    sq_setnativeclosurename(SQ, -1, printfunc->name);
+    sq_newslot(SQ, -3, false);
+
+    sq_pushstring(SQ, printlfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)printlfunc, 0);
+    sq_setnativeclosurename(SQ, -1, printlfunc->name);
+    sq_newslot(SQ, -3, false);
+
+    sq_pushstring(SQ, warningfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)warningfunc, 0);
+    sq_setnativeclosurename(SQ, -1, warningfunc->name);
+    sq_newslot(SQ, -3, false);
+
+    /*sq_pushstring(SQ, assertfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)assertfunc, 0);
+    sq_setnativeclosurename(SQ, -1, assertfunc->name);
+    sq_newslot(SQ, -3, false);
+
+    sq_pushstring(SQ, errorfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)errorfunc, 0);
+    sq_setnativeclosurename(SQ, -1, errorfunc->name);
+    sq_newslot(SQ, -3, false);*/
+
+   /*sq_pushstring(SQ, _SC("error"), -1);
+    sq_newclosure(SQ, (SQFUNCTION)error, 0);
+    sq_newslot(SQ, -3, false);*/
+
+        //generic
+    
+    /*    1, _SC("seterrorhandler"), NULL, (QCFunc)base_seterrorhandler, 2
+    
+    { 1,_SC("setdebughook"),NULL,(QCFunc)base_setdebughook,2 },
+    { 1,_SC("enabledebuginfo"),NULL,(QCFunc)base_enabledebuginfo,2 },
+    { 1,_SC("getstackinfos"),".n",(QCFunc)base_getstackinfos,2 },
+    { 1,_SC("getroottable"),NULL,(QCFunc)base_getroottable,1 },
+    { 1,_SC("setroottable"),NULL,(QCFunc)base_setroottable,2 },
+    { 1,_SC("getconsttable"),NULL,(QCFunc)base_getconsttable,1 },
+    { 1,_SC("setconsttable"),NULL,(QCFunc)base_setconsttable,2 },
+    { 1,_SC("assert"),NULL,(QCFunc)base_assert,-2 },
+        //{1,_SC("print"),NULL,(QCFunc)base_print,2},
+    { 1,_SC("print"),NULL,(QCFunc)printf,2 },
+    { 1,_SC("error"),NULL,(QCFunc)base_error,2 },
+    { 1,_SC("compilestring"),".ss",(QCFunc)base_compilestring,-2 },
+    { 1,_SC("newthread"),".c",(QCFunc)base_newthread,2 },
+    { 1,_SC("suspend"),NULL,(QCFunc)base_suspend,-1 },
+    { 1,_SC("array"),".n",(QCFunc)base_array,-2 },
+    { 1,_SC("type"),NULL,(QCFunc)base_type,2 },
+    { 1,_SC("callee"),NULL,(QCFunc)base_callee,0 },
+    { 1,_SC("dummy"),NULL,(QCFunc)base_dummy,0 },
+#ifndef NO_GARBAGE_COLLECTOR
+    { 1,_SC("collectgarbage"),NULL,(QCFunc)base_collectgarbage,0 },
+    { 1,_SC("resurrectunreachable"),NULL,(QCFunc)base_resurectureachable,0 },
+#endif*/
+
+    // constants
+    sq_pushstring(SQ, _SC("_versionnumber_"), -1);
+    sq_pushinteger(SQ, SQUIRREL_VERSION_NUMBER);
+    sq_newslot(SQ, -3, SQFalse);
+    sq_pushstring(SQ, _SC("_version_"), -1);
+    sq_pushstring(SQ, SQUIRREL_VERSION, -1);
+    sq_newslot(SQ, -3, SQFalse);
+    sq_pushstring(SQ, _SC("_charsize_"), -1);
+    sq_pushinteger(SQ,sizeof(SQChar));
+    sq_newslot(SQ,-3, SQFalse);
+    sq_pushstring(SQ,_SC("_intsize_"),-1);
+    sq_pushinteger(SQ,sizeof(SQInteger));
+    sq_newslot(SQ,-3, SQFalse);
+    sq_pushstring(SQ,_SC("_floatsize_"),-1);
+    sq_pushinteger(SQ,sizeof(SQFloat));
+    sq_newslot(SQ,-3, SQFalse);
+
+    sq_pushstring(SQ, _SC("_endl_"), -1); 
+    sq_pushstring(SQ, _SC("\n"), -1);
+    sq_newslot(SQ, -3, SQFalse);
+}
+
+
 void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
 {
     HSQUIRRELVM SQ = sq_open(1024);
+
     dumpstack(SQ);
+    sq_enabledebuginfo(SQ, true);
+
+    sq_setdebughook(SQ);
+
     sq_compilebuffer(SQ, code, size, "squirrel", false);
     sq_pushroottable(SQ);
+   
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -138,10 +276,14 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
             sq_pushstring(SQ, f->name, -1);
             sq_newclosure(SQ, (SQFUNCTION)f, 0);
             sq_newslot(SQ, -3, false);
+            
+            
         }
         sq_newslot(SQ, -3, false);
     }
-    
+
+    //sq_seterrorfunc(SQ, errfunc);
+
     if (SQ_FAILED(sq_call(SQ, 1,false,false)))
     {
         sq_getlasterror(SQ);
@@ -150,6 +292,7 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
             const SQChar *str;
             sq_getstring(SQ, -1, &str);
             Warning("[Squirrel]: %s\n", str);
+            //SQStackInfos si;
         }
         sq_poptop(SQ);
     }

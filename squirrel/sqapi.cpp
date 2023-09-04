@@ -94,6 +94,13 @@ void sq_seterrorhandler(HSQUIRRELVM v)
     }
 }
 
+void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc)
+{
+
+    _ss(v)->_errorfunc = errfunc;
+
+}
+
 void sq_setnativedebughook(HSQUIRRELVM v,SQDEBUGHOOK hook)
 {
     v->_debughook_native = hook;

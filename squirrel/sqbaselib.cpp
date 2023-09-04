@@ -280,7 +280,6 @@ static SQInteger base_callee(HSQUIRRELVM v)
     }
     return sq_throwerror(v,_SC("no closure in the calls stack"));
 }
-
 static const QFunction base_funcs[]={
     //generic
     {1,_SC("seterrorhandler"),NULL,(QCFunc)base_seterrorhandler,2 },
@@ -292,7 +291,8 @@ static const QFunction base_funcs[]={
     {1,_SC("getconsttable"),NULL,(QCFunc)base_getconsttable,1},
     {1,_SC("setconsttable"),NULL,(QCFunc)base_setconsttable,2},
     {1,_SC("assert"),NULL,(QCFunc)base_assert,-2},
-    {1,_SC("print"),NULL,(QCFunc)base_print,2},
+    //{1,_SC("print"),NULL,(QCFunc)base_print,2},
+    {1,_SC("print"),NULL,(QCFunc)printf,2},
     {1,_SC("error"),NULL,(QCFunc)base_error,2},
     {1,_SC("compilestring"),".ss",(QCFunc)base_compilestring,-2},
     {1,_SC("newthread"),".c",(QCFunc)base_newthread,2},
@@ -310,7 +310,7 @@ static const QFunction base_funcs[]={
 
 void sq_base_register(HSQUIRRELVM v)
 {
-    SQInteger i=0;
+    /*SQInteger i = 0;
     sq_pushroottable(v);
     while(base_funcs[i].name!=0) {
         sq_pushstring(v,base_funcs[i].name,-1);
@@ -319,15 +319,16 @@ void sq_base_register(HSQUIRRELVM v)
         sq_setparamscheck(v,base_funcs[i].etc_data,base_funcs[i].args);
         sq_newslot(v,-3, SQFalse);
         i++;
-    }
+    }*/
 
-    sq_pushstring(v,_SC("_versionnumber_"),-1);
-    sq_pushinteger(v,SQUIRREL_VERSION_NUMBER);
-    sq_newslot(v,-3, SQFalse);
-    sq_pushstring(v,_SC("_version_"),-1);
+
+        sq_pushstring(v,_SC("_versionnumber_"),-1);
+        sq_pushinteger(v,SQUIRREL_VERSION_NUMBER);
+        sq_newslot(v,-3, SQFalse);
+    sq_pushstring(v, _SC("_version_"), -1);
     sq_pushstring(v,SQUIRREL_VERSION,-1);
     sq_newslot(v,-3, SQFalse);
-    sq_pushstring(v,_SC("_charsize_"),-1);
+    /*sq_pushstring(v, _SC("_charsize_"), -1);
     sq_pushinteger(v,sizeof(SQChar));
     sq_newslot(v,-3, SQFalse);
     sq_pushstring(v,_SC("_intsize_"),-1);
@@ -335,8 +336,8 @@ void sq_base_register(HSQUIRRELVM v)
     sq_newslot(v,-3, SQFalse);
     sq_pushstring(v,_SC("_floatsize_"),-1);
     sq_pushinteger(v,sizeof(SQFloat));
-    sq_newslot(v,-3, SQFalse);
-    sq_pop(v,1);
+    sq_newslot(v,-3, SQFalse); */
+    sq_pop(v,1); 
 }
 
 static SQInteger default_delegate_len(HSQUIRRELVM v)

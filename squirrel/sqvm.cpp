@@ -13,10 +13,37 @@
 #include "squserdata.h"
 #include "sqarray.h"
 #include "sqclass.h"
+#include "../public/filesystem.h"
 
 #define TOP() (_stack._vals[_top-1])
 #define TARGET _stack._vals[_stackbase+arg0]
 #define STK(a) _stack._vals[_stackbase+(a)]
+
+SQInteger error(HSQUIRRELVM SQ)
+{
+    const SQChar* str;
+    if (SQ_SUCCEEDED(sq_tostring(SQ, 2)))
+    {
+        if (SQ_SUCCEEDED(sq_getstring(SQ, -1, &str)))
+        {
+
+            if (_ss(SQ)->_errorfunc) _ss(SQ)->_errorfunc(SQ, _SC("%s"), str);
+            
+            return SQ_OK;
+        }
+    }
+
+    return SQ_ERROR;
+}
+
+/*void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
+{
+    va_list args;
+    va_start(args, str);
+    Warning("[Squirrel] ");
+    WarningV(str, args);
+    va_end(args);
+}*/
 
 bool SQVM::BW_OP(SQUnsignedInteger op,SQObjectPtr &trg,const SQObjectPtr &o1,const SQObjectPtr &o2)
 {
@@ -1203,6 +1230,13 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
                 sq_pop(SQ, -1);
                 qargs->args[i] = callback;
             }
+            else
+                goto failure;
+            break;
+
+        case 'b':
+            if (sq_gettype(SQ, i + 2) == OT_BOOL)
+                sq_getbool(SQ, i + 2, (SQBool*)(&qargs->args[i]));
             else
                 goto failure;
             break;

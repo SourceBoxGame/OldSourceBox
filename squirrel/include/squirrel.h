@@ -138,7 +138,7 @@ typedef union tagSQObjectValue
     struct SQOuter *pOuter;
     struct SQGenerator *pGenerator;
     struct SQNativeClosure *pNativeClosure;
-    struct SQString *pString;
+    SQString *pString;
     struct SQUserData *pUserData;
     SQInteger nInteger;
     SQFloat fFloat;
@@ -202,6 +202,7 @@ typedef struct tagSQFunctionInfo {
 SQUIRREL_API HSQUIRRELVM sq_open(SQInteger initialstacksize);
 SQUIRREL_API HSQUIRRELVM sq_newthread(HSQUIRRELVM friendvm, SQInteger initialstacksize);
 SQUIRREL_API void sq_seterrorhandler(HSQUIRRELVM v);
+SQUIRREL_API void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc);
 SQUIRREL_API void sq_close(HSQUIRRELVM v);
 SQUIRREL_API void sq_setforeignptr(HSQUIRRELVM v,SQUserPointer p);
 SQUIRREL_API SQUserPointer sq_getforeignptr(HSQUIRRELVM v);
@@ -394,6 +395,7 @@ SQUIRREL_API void sq_setnativedebughook(HSQUIRRELVM v,SQDEBUGHOOK hook);
 
 #define SQ_OK (0)
 #define SQ_ERROR (-1)
+#define SQ_INITIALERROR (-2)
 
 #define SQ_FAILED(res) (res<0)
 #define SQ_SUCCEEDED(res) (res>=0)

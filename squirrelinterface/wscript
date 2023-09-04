@@ -31,7 +31,7 @@ def build(bld):
 
 	defines = []
 
-	libs = ['vstdlib','tier0','tier1','squirrel']
+	libs = ['vstdlib','tier0','tier1','squirrel', 'qscript']
 
 	install_path = bld.env.LIBDIR
 
