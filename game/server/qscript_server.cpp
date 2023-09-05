@@ -14,15 +14,15 @@ void RegisterCmd(QScriptArgs args)
 	new ConCommandQScript(qscript->GetArgPermaString(args, 0), qscript->GetArgCallback(args, 1));
 }
 
-void InitQScriptClient()
+void InitQScriptServer()
 {
-	QScriptModule mod = qscript->CreateModule("sourcebox_client");
+	QScriptModule mod = qscript->CreateModule("sourcebox_server");
 	qscript->CreateModuleFunction(mod, "Msg", "s", QScriptClientMsg);
 	qscript->CreateModuleFunction(mod, "RegisterCmd", "sp", RegisterCmd);
 }
 
-void LoadModsClient()
+void LoadModsServer()
 {
-	qscript->LoadMods("autorun_client");
-	qscript->LoadModsInDirectory("client","cmds");
+	qscript->LoadMods("autorun_server");
+	qscript->LoadModsInDirectory("server", "cmds");
 }

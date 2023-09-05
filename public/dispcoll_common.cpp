@@ -448,7 +448,7 @@ void NO_ASAN CDispCollTree::AABBTree_GenerateBoxes_r( int nodeIndex, Vector *pMi
 	}
 	else // node
 	{
-		Vector childMins[4], childMaxs[4];
+		Vector childMins[5], childMaxs[5];
 		for ( int i = 0; i < 4; i++ )
 		{
 			int child = Nodes_GetChild( nodeIndex, i );
