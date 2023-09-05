@@ -189,6 +189,9 @@ void CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
             case 'f':
                 PyTuple_SET_ITEM(v, i, PyFloat_FromDouble((double)(*(float*)&args->args[i])));
                 break;
+            case 'b':
+                PyTuple_SET_ITEM(v, i, PyBool_FromLong((bool)(args->args[i])));
+                break;
             default:
                 Py_DECREF(v);
                 return;

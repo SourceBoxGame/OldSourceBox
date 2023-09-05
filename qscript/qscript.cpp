@@ -109,6 +109,12 @@ float CQScript::GetArgFloat(QScriptArgs args, int argnum)
 {
     return ((float*)(((QArgs*)args)->args))[argnum];
 }
+
+bool CQScript::GetArgBool(QScriptArgs args, int argnum)
+{
+    return ((bool*)(((QArgs*)args)->args))[argnum];
+}
+
 QScriptCallback CQScript::GetArgCallback(QScriptArgs args, int argnum)
 {
     return (QScriptCallback)((QCallback**)(((QArgs*)args)->args))[argnum];
@@ -229,6 +235,9 @@ QScriptArgs CQScript::CreateArgs(const char* types, ...)
         case 'f':
         case 'i':
             args->args[i] = (void*)va_arg(va, int);
+            break;
+        case 'b':
+            args->args[i] = (void*)va_arg(va, bool);
             break;
         default:
             Warning("Tried to create invalid arg type '%c' at %i.\n", types[i], i);

@@ -14,6 +14,8 @@ void RegisterCmd(QScriptArgs args)
 	new ConCommandQScript(qscript->GetArgPermaString(args, 0), qscript->GetArgCallback(args, 1));
 }
 
+
+
 void InitQScriptClient()
 {
 	QScriptModule mod = qscript->CreateModule("sourcebox_client");

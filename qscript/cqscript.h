@@ -24,6 +24,7 @@ public:
 	virtual char* GetArgPermaString(QScriptArgs args, int argnum);
 	virtual int GetArgInt(QScriptArgs args, int argnum);
 	virtual float GetArgFloat(QScriptArgs args, int argnum);
+	virtual bool GetArgBool(QScriptArgs args, int argnum);
 	virtual QScriptCallback GetArgCallback(QScriptArgs args, int argnum);
 	virtual void LoadMods(const char* filename);
 	virtual void LoadModsInDirectory(const char* folder, const char* filename);

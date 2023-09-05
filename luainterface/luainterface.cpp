@@ -164,6 +164,9 @@ void CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
         case 'f':
             lua_pushnumber(L, *(float*)&args->args[i]);
             break;
+        case 'b':
+            lua_pushboolean(L, (bool)args->args[i]);
+            break;
         default:
             lua_settop(L, top);
             return;

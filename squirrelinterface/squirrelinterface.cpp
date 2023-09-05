@@ -65,7 +65,6 @@ void CSquirrelInterface::Shutdown()
 
 }
 
-
 static CUtlBuffer* codebuffer = 0;
 void CSquirrelInterface::LoadMod(const char* path)
 {
@@ -123,7 +122,6 @@ void print(QScriptArgs args)
 
 void printl(QScriptArgs args)
 {
-
     Msg("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
 }
 
@@ -141,10 +139,13 @@ void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
 {
     va_list args;
     va_start(args, str);
+    Warning("[QScript:Squirrel]");
     WarningV(str, args);
     Msg("\n");
     va_end(args);
 }
+
+
 
 void base_commands(HSQUIRRELVM SQ)
 {
@@ -250,15 +251,19 @@ void base_commands(HSQUIRRELVM SQ)
     sq_pushstring(SQ, _SC("_versionnumber_"), -1);
     sq_pushinteger(SQ, SQUIRREL_VERSION_NUMBER);
     sq_newslot(SQ, -3, SQFalse);
+
     sq_pushstring(SQ, _SC("_version_"), -1);
     sq_pushstring(SQ, SQUIRREL_VERSION, -1);
     sq_newslot(SQ, -3, SQFalse);
+
     sq_pushstring(SQ, _SC("_charsize_"), -1);
     sq_pushinteger(SQ,sizeof(SQChar));
     sq_newslot(SQ,-3, SQFalse);
+
     sq_pushstring(SQ,_SC("_intsize_"),-1);
     sq_pushinteger(SQ,sizeof(SQInteger));
     sq_newslot(SQ,-3, SQFalse);
+
     sq_pushstring(SQ,_SC("_floatsize_"),-1);
     sq_pushinteger(SQ,sizeof(SQFloat));
     sq_newslot(SQ,-3, SQFalse);

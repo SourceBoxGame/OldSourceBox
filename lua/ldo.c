@@ -549,6 +549,12 @@ static int LuaActualCallback(lua_State* L, QFunction* func)
             else
                 goto failure;
             break;
+        case 'b':
+            if (lua_isboolean(L, i + 1))
+            {
+                qargs->args[i] = (void*)((bool)lua_toboolean(L, i+1));
+            }
+            break;
         case 'p':
             if (lua_isfunction(L, i + 1))
             {
