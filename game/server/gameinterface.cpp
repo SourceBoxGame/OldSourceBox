@@ -89,7 +89,8 @@
 #include "tier3/tier3.h"
 #include "serverbenchmark_base.h"
 #include "querycache.h"
-
+#include "qscript.h"
+#include "qscript_server.h"
 
 #ifdef TF_DLL
 #include "gc_clientsystem.h"
@@ -182,6 +183,7 @@ IServerEngineTools *serverenginetools = NULL;
 ISceneFileCache *scenefilecache = NULL;
 IXboxSystem *xboxsystem = NULL;	// Xbox 360 only
 IMatchmaking *matchmaking = NULL;	// Xbox 360 only
+IQScript *qscript = NULL;
 #if defined( REPLAY_ENABLED )
 IReplaySystem *g_pReplay = NULL;
 IServerReplayContext *g_pReplayServerContext = NULL;
@@ -623,6 +625,8 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 		return false;
 	if ( IsX360() && (matchmaking = (IMatchmaking *)appSystemFactory( VENGINE_MATCHMAKING_VERSION, NULL )) == NULL )
 		return false;
+	if ((qscript = (IQScript*)appSystemFactory(QSCRIPT_INTERFACE_VERSION, NULL)) == NULL)
+		return false;
 
 	// If not running dedicated, grab the engine vgui interface
 	if ( !engine->IsDedicatedServer() )
@@ -742,12 +746,15 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	gamestatsuploader->InitConnection();
 #endif
 
+	InitQScriptServer();
+
 	return true;
 }
 
 void CServerGameDLL::PostInit()
 {
 	IGameSystem::PostInitAllSystems();
+	LoadModsServer();
 }
 
 void CServerGameDLL::DLLShutdown( void )

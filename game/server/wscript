@@ -52,7 +52,8 @@ def build(bld):
 		'../../common',
 		'../../public/tier0',
 		'../../public/tier1',
-		'../../public'
+		'../../public',
+		'../../public/qscript'
 	]
 
 	defines = []
