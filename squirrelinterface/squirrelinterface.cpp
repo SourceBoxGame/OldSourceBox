@@ -130,16 +130,12 @@ void warning(QScriptArgs args)
     Warning("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
 }
 
-void scriptassert(QScriptArgs args)
-{
-    Assert(((bool*)(((QArgs*)args)->args))[0]);
-}
 
 void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
 {
     va_list args;
     va_start(args, str);
-    Warning("[QScript:Squirrel]");
+    Warning("[Squirrel]");
     WarningV(str, args);
     Msg("\n");
     va_end(args);
@@ -165,11 +161,6 @@ void base_commands(HSQUIRRELVM SQ)
     warningfunc->args = "s";
     warningfunc->func = warning;
 
-    QFunction* assertfunc = new QFunction();
-    assertfunc->name = "assert";
-    assertfunc->args = "b";
-    assertfunc->func = (QCFunc)scriptassert;
-
     QFunction* errorfunc = new QFunction();
     errorfunc->name = "error";
     errorfunc->args = "fuck";
@@ -181,6 +172,12 @@ void base_commands(HSQUIRRELVM SQ)
     formatfunc->args = "fuck";
     formatfunc->func = (QCFunc)_string_format;
     formatfunc->native = 1;
+
+    QFunction* assertfunc = new QFunction();
+    assertfunc->name = "assert";
+    assertfunc->args = "fuck";
+    assertfunc->func = (QCFunc)Squirrel_assert;
+    assertfunc->native = 1;
 
     //funcs
     sq_pushstring(SQ, printfunc->name, -1);
@@ -198,11 +195,10 @@ void base_commands(HSQUIRRELVM SQ)
     sq_setnativeclosurename(SQ, -1, warningfunc->name);
     sq_newslot(SQ, -3, false);
 
-
-    /*sq_pushstring(SQ, assertfunc->name, -1);
+    sq_pushstring(SQ, assertfunc->name, -1);
     sq_newclosure(SQ, (SQFUNCTION)assertfunc, 0);
     sq_setnativeclosurename(SQ, -1, assertfunc->name);
-    sq_newslot(SQ, -3, false);*/
+    sq_newslot(SQ, -3, false);
 
     sq_pushstring(SQ, errorfunc->name, -1);
     sq_newclosure(SQ, (SQFUNCTION)errorfunc, 0);

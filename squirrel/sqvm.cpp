@@ -26,11 +26,27 @@ SQInteger error(HSQUIRRELVM SQ)
     {
         if (SQ_SUCCEEDED(sq_getstring(SQ, -1, &str)))
         {
-
             if (_ss(SQ)->_errorfunc) _ss(SQ)->_errorfunc(SQ, _SC("%s"), str);
             
-            return  sq_suspendvm(SQ);;
+            return  sq_suspendvm(SQ);
         }
+    }
+
+    return SQ_ERROR;
+}
+
+SQInteger Squirrel_assert(HSQUIRRELVM SQ)
+{
+    SQBool bl;
+    if (SQ_SUCCEEDED(sq_getbool(SQ, 2, &bl)))
+    {
+        if (!bl)
+        {
+            if (_ss(SQ)->_errorfunc) _ss(SQ)->_errorfunc(SQ, _SC("%s"), "Condition in assert returned 0, false or NULL");
+
+            return  sq_suspendvm(SQ);
+        }
+        return SQ_OK;
     }
 
     return SQ_ERROR;
