@@ -1,9 +1,9 @@
 /* see copyright notice in squirrel.h */
 #include <new>
-#include <squirrel.h>
-#include <sqstdio.h>
+#include "include/squirrel.h"
+#include "include/sqstdio.h"
 #include <string.h>
-#include <sqstdblob.h>
+#include <include/sqstdblob.h>
 #include "sqstdstream.h"
 #include "sqstdblobimpl.h"
 

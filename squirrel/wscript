@@ -30,11 +30,21 @@ def build(bld):
 			"sqobject.cpp",
 			"sqstate.cpp",
 			"sqtable.cpp",
+			
+			"sqstdlib/sqstdaux.cpp",
+			"sqstdlib/sqstdblob.cpp",
+			"sqstdlib/sqstdio.cpp",
+			"sqstdlib/sqstdmath.cpp",
+			"sqstdlib/sqstdrex.cpp",
+			"sqstdlib/sqstdstream.cpp",
+			"sqstdlib/sqstdstring.cpp",
+			"sqstdlib/sqstdsystem.cpp",
 			]
 	
 
 	includes = [
 		'.',
+		'./sqstdlib',
 		'../public',
 		'../public/tier0',
 		'../public/tier1',

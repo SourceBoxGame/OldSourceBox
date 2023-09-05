@@ -11,6 +11,7 @@
 #include "qscript_structs.h"
 #include "qscript/qscript.h"
 #include "../squirrel/include/squirrel.h"
+#include "../squirrel/include/sqstdstring.h"
 #include "sqvm.h"
 #include "Windows.h"
 #include "utlvector.h"
@@ -141,6 +142,7 @@ void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
     va_list args;
     va_start(args, str);
     WarningV(str, args);
+    Msg("\n");
     va_end(args);
 }
 
@@ -169,9 +171,15 @@ void base_commands(HSQUIRRELVM SQ)
 
     QFunction* errorfunc = new QFunction();
     errorfunc->name = "error";
-    errorfunc->args = "s";
+    errorfunc->args = "fuck";
     errorfunc->func = (QCFunc)error;
     errorfunc->native = 1;
+
+    QFunction* formatfunc = new QFunction();
+    formatfunc->name = "format";
+    formatfunc->args = "fuck";
+    formatfunc->func = (QCFunc)_string_format;
+    formatfunc->native = 1;
 
     //funcs
     sq_pushstring(SQ, printfunc->name, -1);
@@ -189,17 +197,25 @@ void base_commands(HSQUIRRELVM SQ)
     sq_setnativeclosurename(SQ, -1, warningfunc->name);
     sq_newslot(SQ, -3, false);
 
+
     /*sq_pushstring(SQ, assertfunc->name, -1);
     sq_newclosure(SQ, (SQFUNCTION)assertfunc, 0);
     sq_setnativeclosurename(SQ, -1, assertfunc->name);
-    sq_newslot(SQ, -3, false);
+    sq_newslot(SQ, -3, false);*/
 
     sq_pushstring(SQ, errorfunc->name, -1);
     sq_newclosure(SQ, (SQFUNCTION)errorfunc, 0);
     sq_setnativeclosurename(SQ, -1, errorfunc->name);
-    sq_newslot(SQ, -3, false);*/
+    sq_newslot(SQ, -3, false);
+    sq_seterrorfunc(SQ, errfunc);
 
-   /*sq_pushstring(SQ, _SC("error"), -1);
+    sq_pushstring(SQ, formatfunc->name, -1);
+    sq_newclosure(SQ, (SQFUNCTION)formatfunc, 0);
+    sq_setnativeclosurename(SQ, -1, formatfunc->name);
+    sq_newslot(SQ, -3, false);
+
+
+    /*sq_pushstring(SQ, _SC("error"), -1);
     sq_newclosure(SQ, (SQFUNCTION)error, 0);
     sq_newslot(SQ, -3, false);*/
 
@@ -282,8 +298,8 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
         sq_newslot(SQ, -3, false);
     }
 
-    //sq_seterrorfunc(SQ, errfunc);
     base_commands(SQ);
+    sq_seterrorfunc(SQ, errfunc);
 
     if (SQ_FAILED(sq_call(SQ, 1,false,false)))
     {

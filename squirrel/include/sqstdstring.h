@@ -28,6 +28,8 @@ SQUIRREL_API void sqstd_pushstringf(HSQUIRRELVM v,const SQChar *s,...);
 
 SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 
+SQUIRREL_API SQInteger _string_format(HSQUIRRELVM v);
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

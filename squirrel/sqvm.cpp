@@ -29,7 +29,7 @@ SQInteger error(HSQUIRRELVM SQ)
 
             if (_ss(SQ)->_errorfunc) _ss(SQ)->_errorfunc(SQ, _SC("%s"), str);
             
-            return SQ_OK;
+            return  sq_suspendvm(SQ);;
         }
     }
 

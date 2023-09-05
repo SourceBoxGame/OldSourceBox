@@ -1,9 +1,9 @@
 /* see copyright notice in squirrel.h */
-#include <squirrel.h>
+#include <include/squirrel.h>
 #include <string.h>
 #include <ctype.h>
 #include <setjmp.h>
-#include <sqstdstring.h>
+#include <include/sqstdstring.h>
 
 #ifdef _DEBUG
 #include <stdio.h>

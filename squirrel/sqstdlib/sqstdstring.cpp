@@ -1,6 +1,6 @@
 /* see copyright notice in squirrel.h */
-#include <squirrel.h>
-#include <sqstdstring.h>
+#include "include/squirrel.h"
+#include "include/sqstdstring.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -188,7 +188,7 @@ static SQInteger _string_printf(HSQUIRRELVM v)
     return 0;
 }
 
-static SQInteger _string_format(HSQUIRRELVM v)
+SQInteger _string_format(HSQUIRRELVM v)
 {
     SQChar *dest = NULL;
     SQInteger length = 0;
