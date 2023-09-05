@@ -135,7 +135,7 @@ void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
 {
     va_list args;
     va_start(args, str);
-    Warning("[Squirrel]");
+    Warning("[Squirrel]: ");
     WarningV(str, args);
     Msg("\n");
     va_end(args);
