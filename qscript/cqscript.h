@@ -42,6 +42,12 @@ public:
 	virtual const char* GetObjectString(QScriptObject object);
 	virtual bool GetObjectBool(QScriptObject object);
 	virtual void* GetObjectVoid(QScriptObject object);
+	virtual QType GetObjectType(QScriptObject object);
+	virtual void SetObjectValue(QScriptObject object, void* val);
+	virtual void SetObjectInt(QScriptObject object, int val);
+	virtual void SetObjectFloat(QScriptObject object, float val);
+	virtual void SetObjectString(QScriptObject object, const char* val);
+	virtual void SetObjectBool(QScriptObject object, bool val);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

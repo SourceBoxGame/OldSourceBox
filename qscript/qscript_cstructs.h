@@ -63,9 +63,12 @@ typedef struct
 {
 	enum QType type;
 	const char* name;
-	void* value;
 	unsigned int count;
-	QObject* objects;
+	union
+	{
+		void* value;
+		QObject* objects;
+	};
 } QObject;
 
 #ifdef __cplusplus

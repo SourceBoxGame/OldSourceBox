@@ -41,6 +41,12 @@ public:
     virtual const char* GetObjectString(QScriptObject object) = 0;
     virtual bool GetObjectBool(QScriptObject object) = 0;
     virtual void* GetObjectVoid(QScriptObject object) = 0;
+    virtual QType GetObjectType(QScriptObject object) = 0;
+    virtual void SetObjectValue(QScriptObject object, void* val) = 0;
+    virtual void SetObjectInt(QScriptObject object, int val) = 0;
+    virtual void SetObjectFloat(QScriptObject object, float val) = 0;
+    virtual void SetObjectString(QScriptObject object, const char* val) = 0;
+    virtual void SetObjectBool(QScriptObject object, bool val) = 0;
 };
 
 

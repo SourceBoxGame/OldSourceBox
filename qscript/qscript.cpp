@@ -343,3 +343,37 @@ void* CQScript::GetObjectVoid(QScriptObject object)
     QObject* obj = (QObject*)object;
     return obj->value;
 }
+
+QType CQScript::GetObjectType(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    return obj->type;
+}
+
+void CQScript::SetObjectValue(QScriptObject object, void* val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = val;
+}
+
+void CQScript::SetObjectInt(QScriptObject object, int val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}
+
+void CQScript::SetObjectFloat(QScriptObject object, float val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = *(void**)&val;
+}
+void CQScript::SetObjectString(QScriptObject object, const char* val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}
+void CQScript::SetObjectBool(QScriptObject object, bool val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}
