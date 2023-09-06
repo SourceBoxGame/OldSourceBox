@@ -36,6 +36,12 @@ public:
 	virtual QScriptReturn RetFloat(float value);
 	virtual QScriptReturn RetBool(bool value);
 	virtual QScriptReturn RetString(const char* value);
+	virtual QScriptObject GetObjectElementByName(QScriptObject obj, const char* name);
+	virtual int GetObjectInt(QScriptObject object);
+	virtual float GetObjectFloat(QScriptObject object);
+	virtual const char* GetObjectString(QScriptObject object);
+	virtual bool GetObjectBool(QScriptObject object);
+	virtual void* GetObjectVoid(QScriptObject object);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

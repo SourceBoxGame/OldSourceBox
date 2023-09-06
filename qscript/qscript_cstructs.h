@@ -25,7 +25,8 @@ enum QType {
 	QType_Float,
 	QType_String,
 	QType_Bool,
-	QType_Callback
+	QType_Callback,
+	QType_Object
 };
 
 typedef struct 
@@ -58,6 +59,14 @@ typedef struct
 	void* value;
 } QReturn;
 
+typedef struct
+{
+	enum QType type;
+	const char* name;
+	void* value;
+	unsigned int count;
+	QObject* objects;
+} QObject;
 
 #ifdef __cplusplus
 }

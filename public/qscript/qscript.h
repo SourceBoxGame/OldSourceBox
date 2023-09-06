@@ -35,6 +35,12 @@ public:
     virtual QScriptReturn RetFloat(float value) = 0;
     virtual QScriptReturn RetBool(bool value) = 0;
     virtual QScriptReturn RetString(const char* value) = 0;
+    virtual QScriptObject GetObjectElementByName(QScriptObject obj, const char* name) = 0;
+    virtual int GetObjectInt(QScriptObject object) = 0;
+    virtual float GetObjectFloat(QScriptObject object) = 0;
+    virtual const char* GetObjectString(QScriptObject object) = 0;
+    virtual bool GetObjectBool(QScriptObject object) = 0;
+    virtual void* GetObjectVoid(QScriptObject object) = 0;
 };
 
 

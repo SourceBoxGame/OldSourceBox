@@ -292,3 +292,54 @@ QScriptReturn CQScript::RetString(const char* value)
     ret->value = (void*)value;
     return (QScriptReturn)ret;
 }
+
+QScriptObject CQScript::GetObjectElementByName(QScriptObject object, const char* name)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Object)
+        return NULL;
+    for (int i = 0; i != obj->count; i++)
+    {
+        if (V_strcmp(obj->objects[i]->name, name) == 0)
+            return obj->objects[i];
+    }
+    return NULL;
+}
+
+int CQScript::GetObjectInt(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Int)
+        return NULL;
+    return (int)obj->value;
+}
+
+float CQScript::GetObjectFloat(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Float)
+        return NULL;
+    return *(float*)&obj->value;
+}
+
+const char* CQScript::GetObjectString(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_String)
+        return NULL;
+    return (const char*)obj->value;
+}
+
+bool CQScript::GetObjectBool(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Bool)
+        return NULL;
+    return (bool)obj->value;
+}
+
+void* CQScript::GetObjectVoid(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    return obj->value;
+}
