@@ -6,7 +6,9 @@ static CQScript s_QScript;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION, s_QScript);
 
 
-
+static const QReturn QNone = {
+    QType_None,0
+}
 
 IFileSystem* g_pFullFileSystem = 0;
 
@@ -255,4 +257,38 @@ void CQScript::FreeArgs(QScriptArgs a)
     QArgs* args = (QArgs*)a;
     free(args->args);
     free(args);
+}
+
+QScriptReturn CQScript::RetNone()
+{
+    return (QScriptReturn)&QNone;
+}
+
+QScriptReturn CQScript::RetInt(int value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Int;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetFloat(float value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Float;
+    ret->value = *(void**)&value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetBool(bool value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Bool;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetString(const char* value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_String;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
 }

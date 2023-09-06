@@ -30,6 +30,11 @@ public:
     virtual void CallCallback(QScriptCallback callback, QScriptArgs args) = 0;
     virtual QScriptArgs CreateArgs(const char* types, ...) = 0;
     virtual void FreeArgs(QScriptArgs a) = 0;
+    virtual QScriptReturn RetNone() = 0;
+    virtual QScriptReturn RetInt(int value) = 0;
+    virtual QScriptReturn RetFloat(float value) = 0;
+    virtual QScriptReturn RetBool(bool value) = 0;
+    virtual QScriptReturn RetString(const char* value) = 0;
 };
 
 

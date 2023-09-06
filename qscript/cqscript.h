@@ -31,6 +31,11 @@ public:
 	virtual void CallCallback(QScriptCallback callback, QScriptArgs args);
 	virtual QScriptArgs CreateArgs(const char* types, ...);
 	virtual void FreeArgs(QScriptArgs a);
+	virtual QScriptReturn RetNone();
+	virtual QScriptReturn RetInt(int value);
+	virtual QScriptReturn RetFloat(float value);
+	virtual QScriptReturn RetBool(bool value);
+	virtual QScriptReturn RetString(const char* value);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
