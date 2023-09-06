@@ -19,8 +19,7 @@ typedef struct {
 typedef QScriptReturn(*QCFunc)(QScriptArgs);
 #endif
 
-enum QType
-{
+enum QType {
 	QType_None = 0,
 	QType_Int,
 	QType_Float,
@@ -55,7 +54,7 @@ typedef struct
 
 typedef struct
 {
-	QType type;
+	enum QType type;
 	void* value;
 } QReturn;
 

@@ -8,7 +8,7 @@ EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION,
 
 static const QReturn QNone = {
     QType_None,0
-}
+};
 
 IFileSystem* g_pFullFileSystem = 0;
 
