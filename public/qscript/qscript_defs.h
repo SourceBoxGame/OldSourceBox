@@ -10,8 +10,9 @@ DECLARE_POINTER_HANDLE(QScriptModule);
 DECLARE_POINTER_HANDLE(QScriptFunction);
 
 #ifndef QSCIRPTCSTRUCTS_H
+DECLARE_POINTER_HANDLE(QScriptReturn);
 DECLARE_POINTER_HANDLE(QScriptArgs);
-typedef void(*QCFunc)(QScriptArgs);
+typedef QScriptReturn(*QCFunc)(QScriptArgs);
 #endif
 
 DECLARE_POINTER_HANDLE(QScriptCallback);

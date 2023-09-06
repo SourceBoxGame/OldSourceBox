@@ -1266,8 +1266,25 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
         free(qargs);
         return 0;
     }
-    func->func((QScriptArgs)qargs);
-    return 0;
+    QReturn* ret = (QReturn*)(func->func((QScriptArgs)qargs));
+
+    switch (ret->type)
+    {
+    case QType_Int:
+        sq_pushinteger(SQ, (int)(ret->value));
+        return 1;
+    case QType_Float:
+        sq_pushfloat(SQ, *(float*)(&ret->value));
+        return 1;
+    case QType_String:
+        sq_pushstring(SQ, (const char*)(ret->value), -1);
+        return 1;
+    case QType_Bool:
+        sq_pushbool(SQ, ret->value != 0);
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 bool SQVM::CallNative(SQNativeClosure *nclosure, SQInteger nargs, SQInteger newbase, SQObjectPtr &retval, SQInt32 target,bool &suspend, bool &tailcall)
