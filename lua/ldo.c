@@ -579,7 +579,10 @@ static int LuaActualCallback(lua_State* L, QFunction* func)
         return 0;
     }
     QReturn* ret = (QReturn*)(func->func((QScriptArgs)qargs));
-  
+    
+    free(qargs->args);
+    free(qargs);
+
     switch (ret->type)
     {
     case QType_Int:
