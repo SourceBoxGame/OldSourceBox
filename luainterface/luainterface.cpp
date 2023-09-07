@@ -37,7 +37,7 @@ private:
 };
 
 static CLuaInterface s_LuaInterface;
-EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CLuaPythonInterface, IBaseScriptingInterface, QSCRIPT_LANGAUGE_INTERFACE_VERSION, s_LuaInterface);
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CLuaInterface, IBaseScriptingInterface, QSCRIPT_LANGAUGE_INTERFACE_VERSION, s_LuaInterface);
 
 InitReturnVal_t CLuaInterface::Init()
 {

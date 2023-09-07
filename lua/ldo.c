@@ -578,8 +578,28 @@ static int LuaActualCallback(lua_State* L, QFunction* func)
         free(qargs);
         return 0;
     }
-    func->func((QScriptArgs)qargs);
-    return 0;
+    QReturn* ret = (QReturn*)(func->func((QScriptArgs)qargs));
+    
+    free(qargs->args);
+    free(qargs);
+
+    switch (ret->type)
+    {
+    case QType_Int:
+        lua_pushinteger(L, (int)(ret->value));
+        return 1;
+    case QType_Float:
+        lua_pushnumber(L, *(float*)(&ret->value));
+        return 1;
+    case QType_String:
+        lua_pushstring(L, (const char*)(ret->value));
+        return 1;
+    case QType_Bool:
+        lua_pushboolean(L, ret->value != 0);
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 /*

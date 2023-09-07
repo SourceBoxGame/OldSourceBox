@@ -15,16 +15,20 @@ FT2_CHECK='''extern "C" {
 #include <ft2build.h>
 #include FT_FREETYPE_H
 }
-
+int main();
+int mainCRTStartup() { return main(); }
 int main() { return FT_Init_FreeType( NULL ); }
 '''
 
 FC_CHECK='''extern "C" {
 #include <fontconfig/fontconfig.h>
 }
-
+int main();
+int mainCRTStartup() { return main(); }
 int main() { return (int)FcInit(); }
 '''
+
+WIN_FRAGMENT = "#pragma comment(linker,\"/ENTRY:main\")\nint main(int argc, char **argv) {(void)argc; (void)argv;return 0;}"
 
 Context.Context.line_just = 55 # should fit for everything on 80x26
 
@@ -419,21 +423,21 @@ def check_deps(conf):
 		conf.check(lib='opus', uselib_store='OPUS')
 
 	if conf.env.DEST_OS == 'win32':
-		conf.check(lib='libz', uselib_store='ZLIB', define_name='USE_ZLIB')
+		conf.check(lib='libz', uselib_store='ZLIB', define_name='USE_ZLIB',fragment=WIN_FRAGMENT)
 		# conf.check(lib='nvtc', uselib_store='NVTC')
 		# conf.check(lib='ati_compress_mt_vc10', uselib_store='ATI_COMPRESS_MT_VC10')
-		conf.check(lib='SDL2', uselib_store='SDL2')
-		conf.check(lib='libjpeg', uselib_store='JPEG', define_name='HAVE_JPEG')
-		conf.check(lib='libpng', uselib_store='PNG', define_name='HAVE_PNG')
-		conf.check(lib='d3dx9', uselib_store='D3DX9')
-		conf.check(lib='d3d9', uselib_store='D3D9')
-		conf.check(lib='dsound', uselib_store='DSOUND')
-		conf.check(lib='dxguid', uselib_store='DXGUID')
+		conf.check(lib='SDL2', uselib_store='SDL2',fragment=WIN_FRAGMENT)
+		conf.check(lib='libjpeg', uselib_store='JPEG', define_name='HAVE_JPEG',fragment=WIN_FRAGMENT)
+		conf.check(lib='libpng', uselib_store='PNG', define_name='HAVE_PNG',fragment=WIN_FRAGMENT)
+		conf.check(lib='d3dx9', uselib_store='D3DX9',fragment=WIN_FRAGMENT)
+		conf.check(lib='d3d9', uselib_store='D3D9',fragment=WIN_FRAGMENT)
+		conf.check(lib='dsound', uselib_store='DSOUND',fragment=WIN_FRAGMENT)
+		conf.check(lib='dxguid', uselib_store='DXGUID',fragment=WIN_FRAGMENT)
 		if conf.options.OPUS:
-			conf.check(lib='opus', uselib_store='OPUS')
+			conf.check(lib='opus', uselib_store='OPUS',fragment=WIN_FRAGMENT)
 		if conf.options.UPDATER:
-			conf.check(lib='curl', uselib_store='CURL')
-			conf.check(lib='bit7z', uselib_store='BIT7Z')
+			conf.check(lib='curl', uselib_store='CURL',fragment=WIN_FRAGMENT)
+			conf.check(lib='bit7z', uselib_store='BIT7Z',fragment=WIN_FRAGMENT)
 
 		# conf.multicheck(*a, run_all_tests = True, mandatory = True)
 

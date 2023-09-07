@@ -6,7 +6,9 @@ static CQScript s_QScript;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION, s_QScript);
 
 
-
+static const QReturn QNone = {
+    QType_None,0
+};
 
 IFileSystem* g_pFullFileSystem = 0;
 
@@ -257,54 +259,121 @@ void CQScript::FreeArgs(QScriptArgs a)
     free(args);
 }
 
-/*
-#define PY_SSIZE_T_CLEAN
-#include "convar.h"
-#include "Python.h"
-
-
-
-
-static PyObject*
-sourcebox_msg(PyObject* self, PyObject* args)
+QScriptReturn CQScript::RetNone()
 {
-    const char* str;
-    if (!PyArg_ParseTuple(args, "s", str))
+    return (QScriptReturn)&QNone;
+}
+
+QScriptReturn CQScript::RetInt(int value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Int;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetFloat(float value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Float;
+    ret->value = *(void**)&value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetBool(bool value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_Bool;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
+}
+QScriptReturn CQScript::RetString(const char* value)
+{
+    QReturn* ret = new QReturn();
+    ret->type = QType_String;
+    ret->value = (void*)value;
+    return (QScriptReturn)ret;
+}
+
+QScriptObject CQScript::GetObjectElementByName(QScriptObject object, const char* name)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Object)
         return NULL;
-    Msg(str);
-    return Py_None;
-}
-
-static PyMethodDef SourceBoxMethods[] = {
-    {"Msg", sourcebox_msg, METH_VARARGS,
-     "Print something to the console"},
-    {NULL, NULL, 0, NULL}
-};
-
-static PyModuleDef SourceBoxModule = {
-    PyModuleDef_HEAD_INIT, "sourcebox", NULL, -1, SourceBoxMethods,
-    NULL, NULL, NULL, NULL
-};
-
-static PyObject*
-PyInit_sourcebox(void)
-{
-    return PyModule_Create(&SourceBoxModule);
-}
-
-
-CON_COMMAND(execute_python, "The beginning")
-{
-    if (!Py_IsInitialized())
+    for (int i = 0; i != obj->count; i++)
     {
-        Py_SetProgramName(L"Command");
-        PyImport_AppendInittab("sourcebox", &PyInit_sourcebox);
-        Py_Initialize();
+        if (V_strcmp(obj->objects[i]->name, name) == 0)
+            return obj->objects[i];
     }
-	PyRun_SimpleString(args.GetCommandString());
-	if (int err = Py_FinalizeEx() < 0)
-	{
-		Msg("python error: %x (%i)", err, err);
-	}
+    return NULL;
 }
-*/
+
+int CQScript::GetObjectInt(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Int)
+        return NULL;
+    return (int)obj->value;
+}
+
+float CQScript::GetObjectFloat(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Float)
+        return NULL;
+    return *(float*)&obj->value;
+}
+
+const char* CQScript::GetObjectString(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_String)
+        return NULL;
+    return (const char*)obj->value;
+}
+
+bool CQScript::GetObjectBool(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    if (obj->type != QType_Bool)
+        return NULL;
+    return (bool)obj->value;
+}
+
+void* CQScript::GetObjectVoid(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    return obj->value;
+}
+
+QType CQScript::GetObjectType(QScriptObject object)
+{
+    QObject* obj = (QObject*)object;
+    return obj->type;
+}
+
+void CQScript::SetObjectValue(QScriptObject object, void* val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = val;
+}
+
+void CQScript::SetObjectInt(QScriptObject object, int val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}
+
+void CQScript::SetObjectFloat(QScriptObject object, float val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = *(void**)&val;
+}
+void CQScript::SetObjectString(QScriptObject object, const char* val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}
+void CQScript::SetObjectBool(QScriptObject object, bool val)
+{
+    QObject* obj = (QObject*)object;
+    obj->value = (void*)val;
+}

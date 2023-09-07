@@ -23,6 +23,7 @@
 #include "squirrelinterface.hpp"
 
 IFileSystem* g_pFullFileSystem = 0;
+IQScript* qscript = 0;
 void* current_interface = 0;
 
 class CSquirrelInterface : public IBaseScriptingInterface
@@ -53,6 +54,7 @@ bool CSquirrelInterface::Connect(CreateInterfaceFn factory)
     ConnectTier1Libraries(&factory, 1);
     ConVar_Register();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
+    qscript = (IQScript*)factory(QSCRIPT_INTERFACE_VERSION, NULL);
     current_interface = this;
     return true;
 }
@@ -118,19 +120,22 @@ void dumpstack(HSQUIRRELVM SQ) {
     Warning("\n");
 }
 
-void print(QScriptArgs args)
+QScriptReturn print(QScriptArgs args)
 {
     Msg("%s", ((const char**)(((QArgs*)args)->args))[0]); //hacky way to reconnect two commands do the same
+    return qscript->RetNone();
 }
 
-void printl(QScriptArgs args)
+QScriptReturn printl(QScriptArgs args)
 {
     Msg("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
+    return qscript->RetNone();
 }
 
-void warning(QScriptArgs args)
+QScriptReturn warning(QScriptArgs args)
 {
     Warning("%s\n", ((const char**)(((QArgs*)args)->args))[0]); 
+    return qscript->RetNone();
 }
 
 

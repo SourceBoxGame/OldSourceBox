@@ -13,10 +13,21 @@ extern "C" {
 typedef struct {
 	int unused;
 }* QScriptArgs;
-typedef void(*QCFunc)(QScriptArgs);
+typedef struct {
+	int unused;
+}* QScriptReturn;
+typedef QScriptReturn(*QCFunc)(QScriptArgs);
 #endif
 
-
+enum QType {
+	QType_None = 0,
+	QType_Int,
+	QType_Float,
+	QType_String,
+	QType_Bool,
+	QType_Callback,
+	QType_Object
+};
 
 typedef struct 
 {
@@ -42,8 +53,23 @@ typedef struct
 	void* env;
 } QCallback;
 
+typedef struct
+{
+	enum QType type;
+	void* value;
+} QReturn;
 
-
+typedef struct
+{
+	enum QType type;
+	const char* name;
+	unsigned int count;
+	union
+	{
+		void* value;
+		QObject* objects;
+	};
+} QObject;
 
 #ifdef __cplusplus
 }
