@@ -52,14 +52,184 @@ SQInteger Squirrel_assert(HSQUIRRELVM SQ)
     return SQ_ERROR;
 }
 
-/*void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
+SQInteger sq_printf(HSQUIRRELVM SQ)
 {
-    va_list args;
-    va_start(args, str);
-    Warning("[Squirrel] ");
-    WarningV(str, args);
-    va_end(args);
-}*/
+    const SQChar* str;
+    SQFloat* flt;
+    SQInteger* integ;
+    SQBool* bl;
+
+    HSQOBJECT obj;
+
+    if (SQ_SUCCEEDED(sq_getstring(SQ, 2, &str)))
+    {
+        Msg(str);
+        return  SQ_OK;
+    }
+    else if (SQ_SUCCEEDED(sq_getfloat(SQ, 2, flt)))
+    {
+        Msg("%f", flt);
+        return  SQ_OK;
+    }
+    else if (SQ_SUCCEEDED(sq_getinteger(SQ, 2, integ)))
+    {
+        Msg("%i", integ);
+        return  SQ_OK;
+    }
+    else if (SQ_SUCCEEDED(sq_getbool(SQ, 2, bl)))
+    {
+        Msg("%b", bl);
+        return  SQ_OK;
+    }
+    else if(SQ_SUCCEEDED(sq_getstackobj(SQ, 2, &obj)))
+    {
+        Msg("%u", obj._unVal.raw);
+        return  SQ_OK;
+    }
+
+    return SQ_ERROR;
+}
+
+SQInteger suspend(HSQUIRRELVM SQ)
+{
+    return  sq_suspendvm(SQ);
+}
+
+#ifndef NO_GARBAGE_COLLECTOR
+SQInteger collectgarbage(HSQUIRRELVM v)
+{
+    sq_pushinteger(v, sq_collectgarbage(v));
+    return 1;
+}
+SQInteger resurectureachable(HSQUIRRELVM v)
+{
+    sq_resurrectunreachable(v);
+    return 1;
+}
+#endif
+
+SQInteger callee(HSQUIRRELVM SQ)
+{
+    if (SQ->_callsstacksize > 1)
+    {
+        SQ->Push(SQ->_callsstack[SQ->_callsstacksize - 2]._closure);
+        return 1;
+    }
+    return sq_throwerror(SQ, _SC("no closure in the calls stack"));
+}
+
+SQInteger sq_typefunc(HSQUIRRELVM v)
+{
+    SQObjectPtr& o = stack_get(v, 2);
+    v->Push(SQString::Create(_ss(v), GetTypeName(o), -1));
+    return 1;
+}
+
+SQInteger compilestring(HSQUIRRELVM v)
+{
+    SQInteger nargs = sq_gettop(v);
+    const SQChar* src = NULL, * name = _SC("unnamedbuffer");
+    SQInteger size;
+    sq_getstring(v, 2, &src);
+    size = sq_getsize(v, 2);
+    if (nargs > 2) {
+        sq_getstring(v, 3, &name);
+    }
+    if (SQ_SUCCEEDED(sq_compilebuffer(v, src, size, name, SQFalse)))
+        return 1;
+    else
+        return SQ_ERROR;
+}
+
+SQInteger newthread(HSQUIRRELVM v)
+{
+    SQObjectPtr& func = stack_get(v, 2);
+    SQInteger stksize = (_closure(func)->_function->_stacksize << 1) + 2;
+    HSQUIRRELVM newv = sq_newthread(v, (stksize < MIN_STACK_OVERHEAD + 2) ? MIN_STACK_OVERHEAD + 2 : stksize);
+    sq_move(newv, v, -2);
+    return 1;
+}
+
+SQInteger __getcallstackinfos(HSQUIRRELVM v, SQInteger level)
+{
+    SQStackInfos si;
+    SQInteger seq = 0;
+    const SQChar* name = NULL;
+
+    if (SQ_SUCCEEDED(sq_stackinfos(v, level, &si)))
+    {
+        const SQChar* fn = _SC("unknown");
+        const SQChar* src = _SC("unknown");
+        if (si.funcname)fn = si.funcname;
+        if (si.source)src = si.source;
+        sq_newtable(v);
+        sq_pushstring(v, _SC("func"), -1);
+        sq_pushstring(v, fn, -1);
+        sq_newslot(v, -3, SQFalse);
+        sq_pushstring(v, _SC("src"), -1);
+        sq_pushstring(v, src, -1);
+        sq_newslot(v, -3, SQFalse);
+        sq_pushstring(v, _SC("line"), -1);
+        sq_pushinteger(v, si.line);
+        sq_newslot(v, -3, SQFalse);
+        sq_pushstring(v, _SC("locals"), -1);
+        sq_newtable(v);
+        seq = 0;
+        while ((name = sq_getlocal(v, level, seq))) {
+            sq_pushstring(v, name, -1);
+            sq_push(v, -2);
+            sq_newslot(v, -4, SQFalse);
+            sq_pop(v, 1);
+            seq++;
+        }
+        sq_newslot(v, -3, SQFalse);
+        return 1;
+    }
+
+    return 0;
+}
+
+SQInteger getstackinfos(HSQUIRRELVM v)
+{
+    SQInteger level;
+    sq_getinteger(v, -1, &level);
+    return __getcallstackinfos(v, level);
+}
+
+
+
+//
+SQInteger getroottable(HSQUIRRELVM v)
+{
+    v->Push(v->_roottable);
+    return 1;
+}
+
+SQInteger getconsttable(HSQUIRRELVM v)
+{
+    v->Push(_ss(v)->_consts);
+    return 1;
+}
+
+
+SQInteger setroottable(HSQUIRRELVM v)
+{
+    SQObjectPtr o = v->_roottable;
+    if (SQ_FAILED(sq_setroottable(v))) return SQ_ERROR;
+    v->Push(o);
+    return 1;
+}
+
+SQInteger setconsttable(HSQUIRRELVM v)
+{
+    SQObjectPtr o = _ss(v)->_consts;
+    if (SQ_FAILED(sq_setconsttable(v))) return SQ_ERROR;
+    v->Push(o);
+    return 1;
+}
+//
+
+
 
 bool SQVM::BW_OP(SQUnsignedInteger op,SQObjectPtr &trg,const SQObjectPtr &o1,const SQObjectPtr &o2)
 {
@@ -850,8 +1020,8 @@ exception_restore:
                             break;
                         }
 
-                        //Raise_Error(_SC("attempt to call '%s'"), GetTypeName(clo));
-                        //SQ_THROW();
+                        Raise_Error(_SC("attempt to call '%s'"), GetTypeName(clo));
+                        SQ_THROW();
                       }
                     default:
                         Raise_Error(_SC("attempt to call '%s'"), GetTypeName(clo));

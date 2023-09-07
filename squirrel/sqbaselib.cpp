@@ -48,12 +48,12 @@ static SQInteger base_dummy(HSQUIRRELVM SQ_UNUSED_ARG(v))
 }
 
 #ifndef NO_GARBAGE_COLLECTOR
-static SQInteger base_collectgarbage(HSQUIRRELVM v)
+SQInteger base_collectgarbage(HSQUIRRELVM v)
 {
     sq_pushinteger(v, sq_collectgarbage(v));
     return 1;
 }
-static SQInteger base_resurectureachable(HSQUIRRELVM v)
+SQInteger base_resurectureachable(HSQUIRRELVM v)
 {
     sq_resurrectunreachable(v);
     return 1;
@@ -147,6 +147,7 @@ static SQInteger __getcallstackinfos(HSQUIRRELVM v,SQInteger level)
 
     return 0;
 }
+
 static SQInteger base_getstackinfos(HSQUIRRELVM v)
 {
     SQInteger level;
