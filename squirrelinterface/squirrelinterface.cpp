@@ -232,7 +232,7 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
     sq_enabledebuginfo(SQ, true);
 
     sq_setdebughook(SQ);
-    sq_compilebuffer(SQ, code, size, "squirrel", SQTrue);
+    sq_compilebuffer(SQ, code, size, "squirrel", SQFalse);
 
     sq_pushroottable(SQ);
     //sqstd_seterrorhandlers(SQ);
@@ -257,7 +257,7 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
     //sq_seterrorfunc(SQ, errfunc);
 
 
-    if (SQ_FAILED(sq_call(SQ, 1,false,true)))
+    if (SQ_FAILED(sq_call(SQ, 1,false,false)))
     {
         sq_getlasterror(SQ);
         if (sq_gettype(SQ, -1) == OT_STRING)
