@@ -191,8 +191,24 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 
 SQInteger error(HSQUIRRELVM v);
 SQInteger Squirrel_assert(HSQUIRRELVM v);
+SQInteger sq_printf(HSQUIRRELVM SQ);
+SQInteger suspend(HSQUIRRELVM SQ);
+SQInteger callee(HSQUIRRELVM SQ);
+SQInteger sq_typefunc(HSQUIRRELVM v);
+SQInteger compilestring(HSQUIRRELVM v);
+SQInteger newthread(HSQUIRRELVM v);
+SQInteger getstackinfos(HSQUIRRELVM v);
+
+SQInteger getroottable(HSQUIRRELVM v);
+SQInteger getconsttable(HSQUIRRELVM v);
+SQInteger setroottable(HSQUIRRELVM v);
+SQInteger setconsttable(HSQUIRRELVM v);
 
 #ifndef NO_GARBAGE_COLLECTOR
+
+SQInteger collectgarbage(HSQUIRRELVM SQ);
+SQInteger resurectureachable(HSQUIRRELVM SQ);
+
 #define _opt_ss(_vm_) (_vm_)->_sharedstate
 #else
 #define _opt_ss(_vm_) NULL
