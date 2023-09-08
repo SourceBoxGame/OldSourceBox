@@ -312,6 +312,36 @@ QScriptObject CQScript::CreateFunctionObject(const char* name, QScriptFunction v
     return (QScriptObject)obj;
 }
 
+typedef CUtlVector<QObject*> QObjectCreator;
+
+QScriptObjectCreator CQScript::StartObject()
+{
+    QObjectCreator* creator = new QObjectCreator();
+    return (QScriptObjectCreator)creator;
+}
+
+void CQScript::AddObject(QScriptObjectCreator creatorhandle, QScriptObject object)
+{
+    QObjectCreator* creator = (QObjectCreator*)creatorhandle;
+    creator->AddToTail((QObject*)object);
+}
+
+QScriptObject CQScript::FinishObject(QScriptObjectCreator creatorhandle, const char* name)
+{
+    QObjectCreator* creator = (QObjectCreator*)creatorhandle;
+    QObject* obj = new QObject();
+    obj->count = creator->Count();
+    obj->name = name;
+    obj->type = QType_Object;
+    if (obj->count)
+    {
+        obj->objs = (QObject**)malloc(obj->count * sizeof(QObject*));
+        for (int i = 0; i != obj->count; i++)
+            obj->objs[i] = creator->Element(i);
+    }
+    return (QScriptObject)obj;
+}
+
 void CQScript::FreeArgs(QScriptArgs a)
 {
     QArgs* args = (QArgs*)a;

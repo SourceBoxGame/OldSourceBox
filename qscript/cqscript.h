@@ -36,6 +36,9 @@ public:
 	virtual QScriptObject CreateStringObject(const char* name, const char* value);
 	virtual QScriptObject CreateBoolObject(const char* name, bool value);
 	virtual QScriptObject CreateFunctionObject(const char* name, QScriptFunction value);
+	virtual QScriptObjectCreator StartObject();
+	virtual void AddObject(QScriptObjectCreator creatorhandle, QScriptObject object);
+	virtual QScriptObject FinishObject(QScriptObjectCreator creatorhandle, const char* name);
 	virtual void FreeArgs(QScriptArgs a);
 	virtual QScriptReturn RetNone();
 	virtual QScriptReturn RetInt(int value);
