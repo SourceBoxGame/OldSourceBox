@@ -25,6 +25,8 @@ extern "C"
 static int s_python_init_index = 0;
 static PyModuleDef* s_python_modules = 0;
 static PyMethodDef* s_python_methods = 0;
+static QObject** s_python_types = 0;
+static int* s_python_type_counts = 0;
 IFileSystem* g_pFullFileSystem = 0;
 IQScript* g_pQScript = 0;
 
@@ -39,6 +41,7 @@ public:
     virtual void LoadMod(const char* path);
     virtual void CallCallback(QCallback* callback, QArgs* args);
     void ExecutePython(const char* code);
+    PyObject* QObjectToPython(QScriptObject obj);
 };
 
 static CPythonInterface s_PythonInterface;
@@ -114,9 +117,116 @@ void CPythonInterface::ExecutePython(const char* code)
 
 }
 
+struct Python_QObject
+{
+    PyObject_HEAD
+    QObject* obj;
+};
+
+static PyObject* Python_Get_QObject_Member(PyObject* obj, void* ch)
+{
+    QObject* child = (QObject*)ch;
+    switch (child->type)
+    {
+    case QType_Int:
+        return PyLong_FromLong(child->value_int);
+    case QType_Bool:
+        return PyBool_FromLong(child->value_bool);
+    case QType_Float:
+        return PyFloat_FromDouble((double)child->value_float);
+    case QType_String:
+        return PyUnicode_FromString(child->value_string);
+    default:
+        return Py_None;
+    }
+}
+
+static int Python_Set_QObject_Member(PyObject* obj, PyObject* val, void* ch)
+{
+    QObject* child = (QObject*)ch;
+    switch (child->type)
+    {
+    case QType_Int:
+        child->value_int = PyLong_AsLong(val); break;
+    case QType_Bool:
+        child->value_bool = Py_IsTrue(val); break;
+    case QType_Float:
+        child->value_float = (float)PyFloat_AsDouble(val); break;
+    case QType_String:
+        child->value_string = PyUnicode_AsUTF8(val); break;
+    default:
+        PyErr_Format(PyExc_TypeError, "%s.%s has invalid type (%i) while trying to set it to %s", obj, child->name, child->type, PyUnicode_AsUTF8(PyObject_Str(val)));
+        return -1;
+    }
+    return 0;
+}
+
+
 static PyObject* Python_Import_Module(void)
 {
-    return PyModule_Create(&s_python_modules[s_python_init_index++]);
+    PyObject *m = PyModule_Create(&s_python_modules[s_python_init_index]);
+    QObject* objs = s_python_types[s_python_init_index];
+    for (int i = 0; i != s_python_type_counts[s_python_init_index]; i++)
+    {
+        QObject* obj = &objs[i];
+        if (obj->type != QType_Object)
+            continue;
+        int member_count, method_count = 0;
+        for (int j = 0; j != obj->count; j++)
+        {
+            QObject* child = obj->objs[j];
+            switch (child->type)
+            {
+            case QType_Int:
+            case QType_Bool:
+            case QType_Float:
+            case QType_String:
+                member_count++;
+                break;
+            case QType_Function:
+                method_count++;
+                break;
+            default:
+                break;
+            }
+        }
+        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * method_count);
+        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * member_count);
+        int member_index, method_index = 0;
+        for (int j = 0; j != obj->count; j++)
+        {
+            QObject* child = obj->objs[j];
+            switch (child->type)
+            {
+            case QType_Int:
+            case QType_Bool:
+            case QType_Float:
+            case QType_String:
+                members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,child };
+                break;
+            case QType_Function:
+                methods[method_index++] = { child->name,reinterpret_cast<PyCFunction>(child->value_function), METH_QSCRIPT, 0 };
+                break;
+            default:
+                break;
+            }
+        }
+        members[member_index++] = { NULL,NULL,NULL,NULL,NULL };
+        methods[method_index++] = { NULL,NULL,NULL,NULL };
+        PyTypeObject* pytypeobj = new PyTypeObject();
+        pytypeobj->ob_base = { { 1 },NULL };
+        pytypeobj->tp_name = obj->name;
+        pytypeobj->tp_getset = members;
+        pytypeobj->tp_methods = methods;
+        PyModule_AddObject(m, obj->name, (PyObject*)pytypeobj);
+    }
+    s_python_init_index++;
+
+}
+
+void CPythonInterface::ImportClasses(CUtlVector<QObject*>* objs)
+{
+    s_python_types = (QObject**)malloc(objs->Count() * sizeof(QObject*));
 }
 
 void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
@@ -204,5 +314,60 @@ void CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
         PyObject_Call((PyObject*)callback->callback, NULL, NULL);
     
 }
+
+
+
+
+
+
+typedef struct {
+    PyObject_HEAD
+        /* Type-specific fields go here. */
+} CustomObject;
+
+static PyTypeObject CustomType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "custom.Custom",
+    .tp_doc = PyDoc_STR("Custom objects"),
+    .tp_basicsize = sizeof(CustomObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+};
+
+static PyModuleDef custommodule = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "custom",
+    .m_doc = "Example module that creates an extension type.",
+    .m_size = -1,
+};
+
+PyMODINIT_FUNC
+PyInit_custom(void)
+{
+    PyObject* m;
+    if (PyType_Ready(&CustomType) < 0)
+        return NULL;
+
+    m = PyModule_Create(&custommodule);
+    if (m == NULL)
+        return NULL;
+
+    Py_INCREF(&CustomType);
+    if (PyModule_AddObject(m, "Custom", (PyObject*)&CustomType) < 0) {
+        Py_DECREF(&CustomType);
+        Py_DECREF(m);
+        return NULL;
+    }
+
+    return m;
+}
+
+
+
+
+
+
+
 
 #endif

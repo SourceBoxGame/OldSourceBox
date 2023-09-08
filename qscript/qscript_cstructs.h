@@ -19,14 +19,16 @@ typedef struct {
 typedef QScriptReturn(*QCFunc)(QScriptArgs);
 #endif
 
-enum QType {
+
+enum QType
+{
 	QType_None = 0,
 	QType_Int,
 	QType_Float,
 	QType_String,
 	QType_Bool,
-	QType_Callback,
-	QType_Object
+	QType_Object,
+	QType_Function
 };
 
 typedef struct 
@@ -61,15 +63,20 @@ typedef struct
 
 typedef struct
 {
-	enum QType type;
 	const char* name;
-	unsigned int count;
+	enum QType type;
+	int count;
 	union
 	{
-		void* value;
-		QObject* objects;
+		int value_int;
+		float value_float;
+		const char* value_string;
+		bool value_bool;
+		QFunction* value_function;
+		QObject** objs;
 	};
 } QObject;
+
 
 #ifdef __cplusplus
 }
