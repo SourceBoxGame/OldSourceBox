@@ -261,6 +261,57 @@ QScriptArgs CQScript::CreateArgs(const char* types, ...)
 
 }
 
+QScriptObject CQScript::CreateIntObject(const char* name, int value)
+{
+    QObject* obj = new QObject();
+    obj->count = 0;
+    obj->name = name;
+    obj->type = QType_Int;
+    obj->value_int = value;
+    return (QScriptObject)obj;
+}
+
+
+QScriptObject CQScript::CreateFloatObject(const char* name, float value)
+{
+    QObject* obj = new QObject();
+    obj->count = 0;
+    obj->name = name;
+    obj->type = QType_Float;
+    obj->value_float = value;
+    return (QScriptObject)obj;
+}
+
+QScriptObject CQScript::CreateStringObject(const char* name, const char* value)
+{
+    QObject* obj = new QObject();
+    obj->count = 0;
+    obj->name = name;
+    obj->type = QType_String;
+    obj->value_string = value;
+    return (QScriptObject)obj;
+}
+
+QScriptObject CQScript::CreateBoolObject(const char* name, bool value)
+{
+    QObject* obj = new QObject();
+    obj->count = 0;
+    obj->name = name;
+    obj->type = QType_Bool;
+    obj->value_bool = value;
+    return (QScriptObject)obj;
+}
+
+QScriptObject CQScript::CreateFunctionObject(const char* name, QScriptFunction value)
+{
+    QObject* obj = new QObject();
+    obj->count = 0;
+    obj->name = name;
+    obj->type = QType_Function;
+    obj->value_function = (QFunction*)value;
+    return (QScriptObject)obj;
+}
+
 void CQScript::FreeArgs(QScriptArgs a)
 {
     QArgs* args = (QArgs*)a;

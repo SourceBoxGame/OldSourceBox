@@ -31,6 +31,11 @@ public:
 	virtual void LoadModsInDirectory(const char* folder, const char* filename);
 	virtual void CallCallback(QScriptCallback callback, QScriptArgs args);
 	virtual QScriptArgs CreateArgs(const char* types, ...);
+	virtual QScriptObject CreateIntObject(const char* name, int value);
+	virtual QScriptObject CreateFloatObject(const char* name, float value);
+	virtual QScriptObject CreateStringObject(const char* name, const char* value);
+	virtual QScriptObject CreateBoolObject(const char* name, bool value);
+	virtual QScriptObject CreateFunctionObject(const char* name, QScriptFunction value);
 	virtual void FreeArgs(QScriptArgs a);
 	virtual QScriptReturn RetNone();
 	virtual QScriptReturn RetInt(int value);
