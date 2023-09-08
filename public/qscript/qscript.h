@@ -20,6 +20,7 @@ public:
     virtual void Shutdown() = 0;
     virtual QScriptModule CreateModule(const char* name) = 0;
     virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, QCFunc func) = 0;
+    virtual void CreateModuleObject(QScriptModule module, QScriptObject object) = 0;
     virtual const char* GetArgString(QScriptArgs args, int argnum) = 0;
     virtual char* GetArgPermaString(QScriptArgs args, int argnum) = 0;
     virtual int GetArgInt(QScriptArgs args, int argnum) = 0;
@@ -42,11 +43,12 @@ public:
     virtual bool GetObjectBool(QScriptObject object) = 0;
     virtual void* GetObjectVoid(QScriptObject object) = 0;
     virtual QType GetObjectType(QScriptObject object) = 0;
-    virtual void SetObjectValue(QScriptObject object, void* val) = 0;
+    virtual void SetObjectValue(QScriptObject object, QType type, void* val) = 0;
     virtual void SetObjectInt(QScriptObject object, int val) = 0;
     virtual void SetObjectFloat(QScriptObject object, float val) = 0;
     virtual void SetObjectString(QScriptObject object, const char* val) = 0;
     virtual void SetObjectBool(QScriptObject object, bool val) = 0;
+    virtual void SetObjectFunction(QScriptObject object, QScriptFunction val) = 0;
 };
 
 

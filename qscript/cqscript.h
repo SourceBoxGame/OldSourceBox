@@ -20,6 +20,7 @@ public:
 	virtual void Shutdown();
 	virtual QScriptModule CreateModule(const char* name);
 	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, const char* args, QCFunc func);
+	virtual void CreateModuleObject(QScriptModule module, QScriptObject object);
 	virtual const char* GetArgString(QScriptArgs args, int argnum);
 	virtual char* GetArgPermaString(QScriptArgs args, int argnum);
 	virtual int GetArgInt(QScriptArgs args, int argnum);
@@ -43,11 +44,12 @@ public:
 	virtual bool GetObjectBool(QScriptObject object);
 	virtual void* GetObjectVoid(QScriptObject object);
 	virtual QType GetObjectType(QScriptObject object);
-	virtual void SetObjectValue(QScriptObject object, void* val);
+	virtual void SetObjectValue(QScriptObject object, QType type, void* val);
 	virtual void SetObjectInt(QScriptObject object, int val);
 	virtual void SetObjectFloat(QScriptObject object, float val);
 	virtual void SetObjectString(QScriptObject object, const char* val);
 	virtual void SetObjectBool(QScriptObject object, bool val);
+	virtual void SetObjectFunction(QScriptObject object, QScriptFunction val);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

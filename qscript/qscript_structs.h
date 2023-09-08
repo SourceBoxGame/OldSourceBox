@@ -10,6 +10,7 @@ struct QModule
 {
 	const char* name;
 	CUtlVector<QFunction*>* functions;
+	CUtlVector<QObject*>* objs;
 };
 
 

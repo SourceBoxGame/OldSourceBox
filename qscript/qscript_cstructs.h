@@ -72,6 +72,7 @@ typedef struct
 		float value_float;
 		const char* value_string;
 		bool value_bool;
+		void* value_raw;
 		QFunction* value_function;
 		QObject** objs;
 	};

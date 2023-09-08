@@ -79,6 +79,12 @@ QScriptFunction CQScript::CreateModuleFunction(QScriptModule module, const char*
     return (QScriptFunction)func;
 }
 
+void CQScript::CreateModuleObject(QScriptModule module, QScriptObject object)
+{
+    QModule* mod = (QModule*)module;
+    QObject* obj = (QObject*)object;
+    mod->objs->AddToTail(obj);
+}
 
 
 QScriptModule CQScript::CreateModule(const char* name)
@@ -241,6 +247,9 @@ QScriptArgs CQScript::CreateArgs(const char* types, ...)
         case 'b':
             args->args[i] = (void*)va_arg(va, bool);
             break;
+        case 'o':
+            args->args[i] = (void*)va_arg(va, QObject*);
+            break;
         default:
             Warning("Tried to create invalid arg type '%c' at %i.\n", types[i], i);
             free(args->args);
@@ -300,8 +309,8 @@ QScriptObject CQScript::GetObjectElementByName(QScriptObject object, const char*
         return NULL;
     for (int i = 0; i != obj->count; i++)
     {
-        if (V_strcmp(obj->objects[i]->name, name) == 0)
-            return obj->objects[i];
+        if (V_strcmp(obj->objs[i]->name, name) == 0)
+            return obj->objs[i];
     }
     return NULL;
 }
@@ -311,7 +320,7 @@ int CQScript::GetObjectInt(QScriptObject object)
     QObject* obj = (QObject*)object;
     if (obj->type != QType_Int)
         return NULL;
-    return (int)obj->value;
+    return obj->value_int;
 }
 
 float CQScript::GetObjectFloat(QScriptObject object)
@@ -319,7 +328,7 @@ float CQScript::GetObjectFloat(QScriptObject object)
     QObject* obj = (QObject*)object;
     if (obj->type != QType_Float)
         return NULL;
-    return *(float*)&obj->value;
+    return obj->value_float;
 }
 
 const char* CQScript::GetObjectString(QScriptObject object)
@@ -327,7 +336,7 @@ const char* CQScript::GetObjectString(QScriptObject object)
     QObject* obj = (QObject*)object;
     if (obj->type != QType_String)
         return NULL;
-    return (const char*)obj->value;
+    return obj->value_string;
 }
 
 bool CQScript::GetObjectBool(QScriptObject object)
@@ -335,13 +344,13 @@ bool CQScript::GetObjectBool(QScriptObject object)
     QObject* obj = (QObject*)object;
     if (obj->type != QType_Bool)
         return NULL;
-    return (bool)obj->value;
+    return obj->value_bool;
 }
 
 void* CQScript::GetObjectVoid(QScriptObject object)
 {
     QObject* obj = (QObject*)object;
-    return obj->value;
+    return obj->value_raw;
 }
 
 QType CQScript::GetObjectType(QScriptObject object)
@@ -350,30 +359,42 @@ QType CQScript::GetObjectType(QScriptObject object)
     return obj->type;
 }
 
-void CQScript::SetObjectValue(QScriptObject object, void* val)
+void CQScript::SetObjectValue(QScriptObject object, QType type, void* val)
 {
     QObject* obj = (QObject*)object;
-    obj->value = val;
+    obj->type = type;
+    obj->value_raw = val;
 }
 
 void CQScript::SetObjectInt(QScriptObject object, int val)
 {
     QObject* obj = (QObject*)object;
-    obj->value = (void*)val;
+    obj->type = QType_Int;
+    obj->value_int = val;
 }
 
 void CQScript::SetObjectFloat(QScriptObject object, float val)
 {
     QObject* obj = (QObject*)object;
-    obj->value = *(void**)&val;
+    obj->type = QType_Float;
+    obj->value_float = val;
 }
 void CQScript::SetObjectString(QScriptObject object, const char* val)
 {
     QObject* obj = (QObject*)object;
-    obj->value = (void*)val;
+    obj->type = QType_String;
+    obj->value_string = val;
 }
 void CQScript::SetObjectBool(QScriptObject object, bool val)
 {
     QObject* obj = (QObject*)object;
-    obj->value = (void*)val;
+    obj->type = QType_Bool;
+    obj->value_bool = val;
+}
+
+void CQScript::SetObjectFunction(QScriptObject object, QScriptFunction func)
+{
+    QObject* obj = (QObject*)object;
+    obj->type = QType_Function;
+    obj->value_function = (QFunction*)func;
 }
