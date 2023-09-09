@@ -92,6 +92,7 @@ QScriptModule CQScript::CreateModule(const char* name)
     QModule* mod = new QModule();
     mod->name = name;
     mod->functions = new CUtlVector<QFunction*>();
+    mod->objs = new CUtlVector<QObject*>();
     m_modules->AddToTail(mod);
     return (QScriptModule)mod;
 }
@@ -391,7 +392,7 @@ QScriptObject CQScript::GetObjectElementByName(QScriptObject object, const char*
     for (int i = 0; i != obj->count; i++)
     {
         if (V_strcmp(obj->objs[i]->name, name) == 0)
-            return obj->objs[i];
+            return (QScriptObject)obj->objs[i];
     }
     return NULL;
 }

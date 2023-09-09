@@ -30,7 +30,6 @@ public:
     virtual void LoadModsInDirectory(const char* folder, const char* filename) = 0;
     virtual void CallCallback(QScriptCallback callback, QScriptArgs args) = 0;
     virtual QScriptArgs CreateArgs(const char* types, ...) = 0;
-    virtual QScriptObject CreateObject(const char* name, QType type, int count) = 0;
     virtual QScriptObject CreateIntObject(const char* name, int value) = 0;
     virtual QScriptObject CreateFloatObject(const char* name, float value) = 0;
     virtual QScriptObject CreateStringObject(const char* name, const char* value) = 0;
@@ -51,7 +50,7 @@ public:
     virtual const char* GetObjectString(QScriptObject object) = 0;
     virtual bool GetObjectBool(QScriptObject object) = 0;
     virtual void* GetObjectVoid(QScriptObject object) = 0;
-    virtual QType GetObjectType(QScriptObject object) = 0;
+    virtual enum QType GetObjectType(QScriptObject object) = 0;
     virtual void SetObjectValue(QScriptObject object, QType type, void* val) = 0;
     virtual void SetObjectInt(QScriptObject object, int val) = 0;
     virtual void SetObjectFloat(QScriptObject object, float val) = 0;

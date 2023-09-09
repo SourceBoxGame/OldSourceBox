@@ -5,8 +5,9 @@
 #endif
 #ifdef __cplusplus
 extern "C" {
+#else
+#include <stdbool.h>
 #endif
-
 
 
 #ifndef QSCRIPTDEFS_H
@@ -61,7 +62,9 @@ typedef struct
 	void* value;
 } QReturn;
 
-typedef struct
+typedef struct QObject QObject;
+
+struct QObject
 {
 	const char* name;
 	enum QType type;
@@ -76,7 +79,7 @@ typedef struct
 		QFunction* value_function;
 		QObject** objs;
 	};
-} QObject;
+};
 
 
 #ifdef __cplusplus

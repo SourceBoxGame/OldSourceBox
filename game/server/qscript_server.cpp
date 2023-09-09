@@ -2,8 +2,6 @@
 #include "qscript_convar.h"
 #include "convar.h"
 #include "edict.h"
-#include "util.h"
-
 extern CGlobalVars* gpGlobals;
 extern IQScript* qscript;
 
@@ -39,12 +37,13 @@ QScriptReturn GetDelayInTicks(QScriptArgs args)
 	return qscript->RetFloat(gpGlobals->tickcount + qscript->GetArgInt(args, 0));
 }
 
-
+/*
 QScriptReturn HudHintYEAAAH(QScriptArgs args)
 {
+	UTIL_HudHintText()
 	return qscript->RetNone();
 }
-
+*/
 
 void InitQScriptServer()
 {

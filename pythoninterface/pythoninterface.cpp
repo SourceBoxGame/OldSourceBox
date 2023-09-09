@@ -222,6 +222,7 @@ static PyObject* Python_Import_Module(void)
         PyModule_AddObject(m, obj->name, (PyObject*)pytypeobj);
     }
     s_python_init_index++;
+    return m;
 
 }
 
