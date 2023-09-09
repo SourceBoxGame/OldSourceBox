@@ -19,6 +19,7 @@
 #include "tier1.h"
 #include "filesystem.h"
 #include "../squirrel/include/sqstdaux.h"
+#include "../squirrel/include/sqstdmath.h"
 
 #include "squirrelinterface.hpp"
 
@@ -155,6 +156,20 @@ void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
     va_end(args);
 }
 
+void errCBfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
+{
+    va_list args;
+    va_start(args, str);
+    WarningV(str, args);
+    va_end(args);
+
+}
+
+
+void emptyprintl(HSQUIRRELVM SQ, const SQChar* str, ...)
+{
+    Msg("%s\n", str);
+}
 
 
 void base_commands(HSQUIRRELVM SQ)
@@ -173,6 +188,9 @@ void base_commands(HSQUIRRELVM SQ)
     DECLARE_SQUIRREL_FUNCTION(compilestring, "compilestring", "s", true, SQ)
     DECLARE_SQUIRREL_FUNCTION(newthread, "newthread", "s", true, SQ)
     DECLARE_SQUIRREL_FUNCTION(getstackinfos, "getstackinfos", "s", true, SQ)
+
+    sq_setprintfunc(SQ, emptyprintl, errfunc);
+    sq_seterrorcallstackfunc(SQ, errCBfunc);
 
     DECLARE_SQUIRREL_FUNCTION(getroottable, "getroottable", "s", true, SQ)
     DECLARE_SQUIRREL_FUNCTION(getconsttable, "getconsttable", "s", true, SQ)
@@ -227,15 +245,15 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
 {
     HSQUIRRELVM SQ = sq_open(VM_STATIC_STACKSIZE * 2); //i dont think we will get enough stacksize with just 1024
 
-    //sq_setforeignptr(SQ, this);
+    sq_setforeignptr(SQ, this);
     dumpstack(SQ);
     sq_enabledebuginfo(SQ, true);
 
     sq_setdebughook(SQ);
-    sq_compilebuffer(SQ, code, size, "squirrel", SQFalse);
+    sq_compilebuffer(SQ, code, size, "squirrel", SQTrue);
 
     sq_pushroottable(SQ);
-    //sqstd_seterrorhandlers(SQ);
+    sqstd_seterrorhandlers(SQ);
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -254,10 +272,9 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
     }
 
     base_commands(SQ);
-    //sq_seterrorfunc(SQ, errfunc);
+    sqstd_register_mathlib(SQ);
 
-
-    if (SQ_FAILED(sq_call(SQ, 1,false,false)))
+    if (SQ_FAILED(sq_call(SQ, 1,false,true)))
     {
         sq_getlasterror(SQ);
         if (sq_gettype(SQ, -1) == OT_STRING)
@@ -266,9 +283,9 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
             sq_getstring(SQ, -1, &str);
             Warning("[Squirrel]: %s\n", str);
 
-            /*SQInteger level;
-            sq_getinteger(SQ, -1, &level);
-            write_callstack(SQ, level);*/
+            //SQInteger level;
+            //sq_getinteger(SQ, -1, &level);
+            //write_callstack(SQ, level);
 
             //sqstd_printcallstack(SQ);
         }
@@ -326,8 +343,8 @@ void write_callstack(HSQUIRRELVM SQ, SQInteger level)
 
     Warning("[Squirrel Virtual Machine]: Trying to get data from stack\n");
 
-    //if (SQ_SUCCEEDED(sq_stackinfos(SQ, level, &si)))
-    if (SQ_SUCCEEDED(sq_stackinfos(SQ, 0, &si)))
+    if (SQ_SUCCEEDED(sq_stackinfos(SQ, level, &si)))
+    //if (SQ_SUCCEEDED(sq_stackinfos(SQ, 0, &si)))
     {
         const SQChar* fn = _SC("unknown");
         const SQChar* src = _SC("unknown");

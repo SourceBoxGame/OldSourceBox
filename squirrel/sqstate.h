@@ -107,6 +107,7 @@ public:
     SQCOMPILERERROR _compilererrorhandler;
     SQPRINTFUNCTION _printfunc;
     SQPRINTFUNCTION _errorfunc;
+    SQPRINTFUNCTION _errorcallstackfunc;
     bool _debuginfo;
     bool _notifyallexceptions;
     SQUserPointer _foreignptr;

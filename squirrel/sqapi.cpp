@@ -13,6 +13,12 @@
 #include "sqfuncstate.h"
 #include "sqclass.h"
 
+#include "qscript_language.h"
+#include "qscript_defs.h"
+#include "qscript_structs.h"
+#include "qscript/qscript.h"
+
+
 static bool sq_aux_gettypedarg(HSQUIRRELVM v,SQInteger idx,SQObjectType type,SQObjectPtr **o)
 {
     *o = &stack_get(v,idx);
@@ -88,7 +94,18 @@ SQInteger sq_getvmstate(HSQUIRRELVM v)
 void sq_seterrorhandler(HSQUIRRELVM v)
 {
     SQObject o = stack_get(v, -1);
+
     if(sq_isclosure(o) || sq_isnativeclosure(o) || sq_isnull(o)) {
+        v->_errorhandler = o;
+        v->Pop();
+    }
+}
+
+void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err)
+{
+    SQObject o = stack_get(v, -1);
+
+    if (err->func && err->native) {
         v->_errorhandler = o;
         v->Pop();
     }
@@ -1612,6 +1629,11 @@ void sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION er
     _ss(v)->_errorfunc = errfunc;
 }
 
+void sq_seterrorcallstackfunc(HSQUIRRELVM v, SQPRINTFUNCTION errorcallstackfunc)
+{
+    _ss(v)->_errorcallstackfunc = errorcallstackfunc;
+}
+
 SQPRINTFUNCTION sq_getprintfunc(HSQUIRRELVM v)
 {
     return _ss(v)->_printfunc;
@@ -1621,6 +1643,11 @@ SQPRINTFUNCTION sq_geterrorfunc(HSQUIRRELVM v)
 {
     return _ss(v)->_errorfunc;
 }
+SQPRINTFUNCTION sq_geterrorcallstackfunc(HSQUIRRELVM v)
+{
+    return _ss(v)->_errorcallstackfunc;
+}
+
 
 void *sq_malloc(SQUnsignedInteger size)
 {

@@ -3,11 +3,17 @@
 #include <math.h>
 #include <stdlib.h>
 #include <include/sqstdmath.h>
+#include "../../squirrelinterface/squirrelinterface.hpp"
 
 #define SINGLE_ARG_FUNC(_funcname) static SQInteger math_##_funcname(HSQUIRRELVM v){ \
     SQFloat f; \
     sq_getfloat(v,2,&f); \
     sq_pushfloat(v,(SQFloat)_funcname(f)); \
+    return 1; \
+}
+
+#define _FUNC(_funcname) static SQInteger math_##_funcname(HSQUIRRELVM v){ \
+    sq_pushfloat(v,(SQFloat)_funcname()); \
     return 1; \
 }
 
@@ -19,27 +25,46 @@
     return 1; \
 }
 
-static SQInteger math_srand(HSQUIRRELVM v)
-{
-    SQInteger i;
-    if(SQ_FAILED(sq_getinteger(v,2,&i)))
-        return sq_throwerror(v,_SC("invalid param"));
-    srand((unsigned int)i);
-    return 0;
-}
-
-static SQInteger math_rand(HSQUIRRELVM v)
-{
-    sq_pushinteger(v,rand());
-    return 1;
-}
-
 static SQInteger math_abs(HSQUIRRELVM v)
 {
     SQInteger n;
     sq_getinteger(v,2,&n);
     sq_pushinteger(v,(SQInteger)abs((int)n));
     return 1;
+}
+
+int sq_RandomInteger(int min, int max)
+{
+    return RandomInt(min, max);
+}
+
+int sq_srand()
+{
+    return RandomInt(0, RAND_MAX);
+}
+
+
+float sq_srandf()
+{
+    return RandomFloat(0, RAND_MAX);
+}
+
+void sq_randseed(float seed)
+{
+    RandomSeed(seed);
+}
+
+SQInteger sq_map(HSQUIRRELVM v)
+{
+    SQFloat p1, p2, p3, p4, p5; 
+    sq_getfloat(v, 2, &p1); 
+    sq_getfloat(v, 3, &p2); 
+    sq_getfloat(v, 4, &p3); 
+    sq_getfloat(v, 5, &p4); 
+    sq_getfloat(v, 5, &p5); 
+
+    sq_pushfloat(v, (SQFloat)RemapVal(p1, p2, p3, p4, p5));
+    return 1; 
 }
 
 SINGLE_ARG_FUNC(sqrt)
@@ -58,7 +83,13 @@ SINGLE_ARG_FUNC(floor)
 SINGLE_ARG_FUNC(ceil)
 SINGLE_ARG_FUNC(exp)
 
-#define _DECL_FUNC(name,nparams,tycheck) {_SC(#name),math_##name,nparams,tycheck}
+TWO_ARGS_FUNC(sq_RandomInteger)
+
+_FUNC(sq_srand)
+_FUNC(sq_srandf)
+_FUNC(rand)
+
+/*#define _DECL_FUNC(name,nparams,tycheck) {_SC(#name),math_##name,nparams,tycheck}
 static const SQRegFunction mathlib_funcs[] = {
     _DECL_FUNC(sqrt,2,_SC(".n")),
     _DECL_FUNC(sin,2,_SC(".n")),
@@ -80,7 +111,7 @@ static const SQRegFunction mathlib_funcs[] = {
     _DECL_FUNC(abs,2,_SC(".n")),
     {NULL,(SQFUNCTION)0,0,NULL}
 };
-#undef _DECL_FUNC
+#undef _DECL_FUNC*/
 
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
@@ -88,7 +119,7 @@ static const SQRegFunction mathlib_funcs[] = {
 
 SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
 {
-    SQInteger i=0;
+    /*SQInteger i = 0;
     while(mathlib_funcs[i].name!=0) {
         sq_pushstring(v,mathlib_funcs[i].name,-1);
         sq_newclosure(v,mathlib_funcs[i].f,0);
@@ -96,12 +127,40 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
         sq_setnativeclosurename(v,-1,mathlib_funcs[i].name);
         sq_newslot(v,-3,SQFalse);
         i++;
-    }
-    sq_pushstring(v,_SC("RAND_MAX"),-1);
+    }*/
+
+    DECL_FUNC_MATH(sqrt, "sqrt", "s", true, v)
+    DECL_FUNC_MATH(sin, "sin", "s", true, v)
+    DECL_FUNC_MATH(cos, "cos", "s", true, v)
+    DECL_FUNC_MATH(asin, "asin", "s", true, v)
+    DECL_FUNC_MATH(acos, "acos", "s", true, v)
+    DECL_FUNC_MATH(log, "log", "s", true, v)
+    DECL_FUNC_MATH(log10, "log10", "s", true, v)
+    DECL_FUNC_MATH(tan, "tan", "s", true, v)
+    DECL_FUNC_MATH(atan, "atan", "s", true, v)
+    DECL_FUNC_MATH(atan2, "atan2", "s", true, v)
+    DECL_FUNC_MATH(pow, "pow", "s", true, v)
+    DECL_FUNC_MATH(floor, "floor", "s", true, v)
+    DECL_FUNC_MATH(ceil, "ceil", "s", true, v)
+    DECL_FUNC_MATH(exp, "exp", "s", true, v)
+    DECL_FUNC_MATH(sq_srand, "srand", "s", true, v)
+    DECL_FUNC_MATH(sq_srandf, "srandf", "s", true, v)
+    DECL_FUNC_MATH(rand, "rand", "s", true, v)
+    DECL_FUNC_MATH(fabs, "fabs", "s", true, v)
+    DECL_FUNC_MATH(abs, "abs", "s", true, v)
+    DECL_FUNC_MATH(sq_RandomInteger, "randi", "s", true, v)
+
+    DECLARE_SQUIRREL_FUNCTION(sq_map, "map", "s", true, v)
+    DECLARE_SQUIRREL_FUNCTION(sq_randseed, "randseed", "s", true, v)
+
+    DECLARE_SQUIRREL_VARIABLE_INTEGER(RAND_MAX, "RAND_MAX", v)
+    DECLARE_SQUIRREL_VARIABLE_FLOAT(M_PI, "PI", v)
+
+    /*sq_pushstring(v, _SC("RAND_MAX"), -1);
     sq_pushinteger(v,RAND_MAX);
     sq_newslot(v,-3,SQFalse);
     sq_pushstring(v,_SC("PI"),-1);
     sq_pushfloat(v,(SQFloat)M_PI);
-    sq_newslot(v,-3,SQFalse);
+    sq_newslot(v,-3,SQFalse);*/
     return SQ_OK;
 }

@@ -14,11 +14,6 @@
 #ifdef GNUC
 #define __cdecl 
 #endif
-
-void __cdecl srand(unsigned int)
-{
-}
-
 int __cdecl rand()
 {
 	return RandomInt( 0, VALVE_RAND_MAX );

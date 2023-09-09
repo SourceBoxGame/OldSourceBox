@@ -26,6 +26,11 @@ THE SOFTWARE.
 #include _SQ_CONFIG_INCLUDE
 #endif
 
+#include "qscript_language.h"
+#include "qscript_defs.h"
+#include "qscript_structs.h"
+#include "qscript/qscript.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -202,7 +207,9 @@ typedef struct tagSQFunctionInfo {
 SQUIRREL_API HSQUIRRELVM sq_open(SQInteger initialstacksize);
 SQUIRREL_API HSQUIRRELVM sq_newthread(HSQUIRRELVM friendvm, SQInteger initialstacksize);
 SQUIRREL_API void sq_seterrorhandler(HSQUIRRELVM v);
+SQUIRREL_API void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err);
 SQUIRREL_API void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc);
+SQUIRREL_API void sq_seterrorcallstackfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc);
 SQUIRREL_API void sq_close(HSQUIRRELVM v);
 SQUIRREL_API void sq_setforeignptr(HSQUIRRELVM v,SQUserPointer p);
 SQUIRREL_API SQUserPointer sq_getforeignptr(HSQUIRRELVM v);
@@ -215,6 +222,7 @@ SQUIRREL_API SQRELEASEHOOK sq_getsharedreleasehook(HSQUIRRELVM v);
 SQUIRREL_API void sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION errfunc);
 SQUIRREL_API SQPRINTFUNCTION sq_getprintfunc(HSQUIRRELVM v);
 SQUIRREL_API SQPRINTFUNCTION sq_geterrorfunc(HSQUIRRELVM v);
+SQUIRREL_API SQPRINTFUNCTION sq_geterrorcallstackfunc(HSQUIRRELVM v);
 SQUIRREL_API SQRESULT sq_suspendvm(HSQUIRRELVM v);
 SQUIRREL_API SQRESULT sq_wakeupvm(HSQUIRRELVM v,SQBool resumedret,SQBool retval,SQBool raiseerror,SQBool throwerror);
 SQUIRREL_API SQInteger sq_getvmstate(HSQUIRRELVM v);

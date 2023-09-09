@@ -44,6 +44,11 @@
         sq_pushinteger(SQ, var##);\
         sq_newslot(SQ, -3, SQFalse);
 
+#define DECLARE_SQUIRREL_VARIABLE_FLOAT(var, sqname, SQ)\
+        sq_pushstring(SQ, _SC(sqname##), -1);\
+        sq_pushfloat(SQ, var##);\
+        sq_newslot(SQ, -3, SQFalse);
+
 
 #define DECLARE_SQUIRREL_VARIABLE_STRING(var, sqname, SQ)\
         sq_pushstring(SQ, _SC(sqname##), -1);\

@@ -5,9 +5,14 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#include "qscript_language.h"
+#include "qscript_defs.h"
+#include "qscript_structs.h"
+#include "qscript/qscript.h"
+
 void sqstd_printcallstack(HSQUIRRELVM v)
 {
-    SQPRINTFUNCTION pf = sq_geterrorfunc(v);
+    SQPRINTFUNCTION pf = sq_geterrorcallstackfunc(v);
     if(pf) {
         SQStackInfos si;
         SQInteger i;
@@ -87,7 +92,7 @@ void sqstd_printcallstack(HSQUIRRELVM v)
                 case OT_BOOL:{
                     SQBool bval;
                     sq_getbool(v,-1,&bval);
-                    pf(v,_SC("[%s] %s\n"),name,bval == SQTrue ? _SC("true"):_SC("false"));
+                    pf(v,_SC("[%s] %u\n"),name, bval);
                              }
                     break;
                 default: assert(0); break;
@@ -124,11 +129,25 @@ void _sqstd_compiler_error(HSQUIRRELVM v,const SQChar *sErr,const SQChar *sSourc
     }
 }
 
+void errfunctwo(HSQUIRRELVM v, const SQChar* sErr, const SQChar* sSource, SQInteger line, SQInteger column)
+{
+    //Warning("[Squirrel]: ");
+    Warning("%s in file [%s | line:%i/%i]", sErr, sSource, line, column);
+    //Msg("\n");
+}
+
 void sqstd_seterrorhandlers(HSQUIRRELVM v)
 {
+
+    QFunction* printerror_func = new QFunction(); 
+    printerror_func->name = "prf"; 
+    printerror_func->args = "s"; 
+    printerror_func->func = (QCFunc)_sqstd_aux_printerror; 
+    printerror_func->native = 1; 
+
     sq_setcompilererrorhandler(v,_sqstd_compiler_error);
-    sq_newclosure(v,_sqstd_aux_printerror,0);
-    sq_seterrorhandler(v);
+    sq_newclosure(v, (SQFUNCTION)printerror_func,0);
+    sq_seterrorhandlertwo(v, printerror_func);
 }
 
 SQRESULT sqstd_throwerrorf(HSQUIRRELVM v,const SQChar *err,...)
