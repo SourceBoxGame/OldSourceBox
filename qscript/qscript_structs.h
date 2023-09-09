@@ -13,5 +13,16 @@ struct QModule
 	CUtlVector<QObject*>* objs;
 };
 
+void CopyQObject(QObject **dst, QObject* src)
+{
+	*dst = new QObject();
+	memcpy(*dst, src, sizeof(QObject));
+	for (int i = 0; i != (*dst)->count; i++)
+	{
+		QObject* child;
+		CopyQObject(&child, src->objs[i]);
+		(*dst)->objs[i] = child;
+	}
+}
 
 #endif

@@ -124,9 +124,15 @@ struct Python_QObject
     QObject* obj;
 };
 
+struct Python_QObject_Member
+{
+    QObject* value;
+    QObject* parent;
+};
+
 static PyObject* Python_Get_QObject_Member(PyObject* obj, void* ch)
 {
-    QObject* child = (QObject*)ch;
+    QObject* child = ((Python_QObject_Member*)ch)->value;
     switch (child->type)
     {
     case QType_Int:
@@ -144,7 +150,7 @@ static PyObject* Python_Get_QObject_Member(PyObject* obj, void* ch)
 
 static int Python_Set_QObject_Member(PyObject* obj, PyObject* val, void* ch)
 {
-    QObject* child = (QObject*)ch;
+    QObject* child = ((Python_QObject_Member*)ch)->value;
     switch (child->type)
     {
     case QType_Int:
@@ -163,6 +169,26 @@ static int Python_Set_QObject_Member(PyObject* obj, PyObject* val, void* ch)
 }
 
 
+
+PyObject*
+Python_QObject_New(PyTypeObject* type, PyObject* args, PyObject* kwds)
+{
+    Python_QObject* self;
+    self = (Python_QObject*)type->tp_alloc(type, 0);
+    if (!self)
+        return NULL;
+    if (!self->ob_base.ob_type->tp_getset[0].name)
+    {
+        self->obj = new QObject();
+        return (PyObject*)self;
+    }
+    QObject* obj = ((Python_QObject_Member*)self->ob_base.ob_type->tp_getset[0].closure)->parent;
+    QObject* newobj;
+    CopyQObject(&newobj, obj);
+    self->obj = newobj;
+    return (PyObject*)self;
+}
+
 static PyObject* Python_Import_Module(void)
 {
     PyObject *m = PyModule_Create(&s_python_modules[s_python_init_index]);
@@ -172,7 +198,8 @@ static PyObject* Python_Import_Module(void)
         QObject* obj = &objs[i];
         if (obj->type != QType_Object)
             continue;
-        int member_count, method_count = 0;
+        int member_count = 0;
+        int method_count = 0;
         for (int j = 0; j != obj->count; j++)
         {
             QObject* child = obj->objs[j];
@@ -191,22 +218,27 @@ static PyObject* Python_Import_Module(void)
                 break;
             }
         }
-        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * method_count);
-        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * member_count);
-        int member_index, method_index = 0;
+        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (method_count + 1));
+        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (member_count + 1));
+        int member_index = 0;
+        int method_index = 0;
         for (int j = 0; j != obj->count; j++)
         {
             QObject* child = obj->objs[j];
+            Python_QObject_Member* memb;
             switch (child->type)
             {
             case QType_Int:
             case QType_Bool:
             case QType_Float:
             case QType_String:
-                members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,child };
+                memb = new Python_QObject_Member();
+                memb->value = child;
+                memb->parent = obj;
+                members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,memb };
                 break;
             case QType_Function:
-                methods[method_index++] = { child->name,reinterpret_cast<PyCFunction>(child->value_function), METH_QSCRIPT, 0 };
+                methods[method_index++] = { child->name,reinterpret_cast<PyCFunction>(child->value_function), METH_OBJQSCRIPT, 0 };
                 break;
             default:
                 break;
@@ -216,9 +248,17 @@ static PyObject* Python_Import_Module(void)
         methods[method_index++] = { NULL,NULL,NULL,NULL };
         PyTypeObject* pytypeobj = new PyTypeObject();
         pytypeobj->ob_base = { { 1 },NULL };
-        pytypeobj->tp_name = obj->name;
+        char* obj_name = (char*)malloc(strlen(obj->name) + strlen(s_python_modules[s_python_init_index].m_name) + 2);
+        sprintf(obj_name, "%s.%s", s_python_modules[s_python_init_index].m_name, obj->name);
+        pytypeobj->tp_name = obj_name;
         pytypeobj->tp_getset = members;
         pytypeobj->tp_methods = methods;
+        pytypeobj->tp_basicsize = sizeof(Python_QObject);
+        pytypeobj->tp_itemsize = 0;
+        pytypeobj->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
+        pytypeobj->tp_new = Python_QObject_New;
+        PyType_Ready(pytypeobj);
+        Py_INCREF(pytypeobj);
         PyModule_AddObject(m, obj->name, (PyObject*)pytypeobj);
     }
     s_python_init_index++;
@@ -271,7 +311,7 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
         {
             QFunction* func = mod->functions->Element(j);
             s_python_methods[funcIndex] = {                      //Yes. We just DID modify the python interpreter. Everybody has to modify theirs too if they dont want to deal with assembly hacks :)
-                func->name, reinterpret_cast<PyCFunction>(func), METH_OBJQSCRIPT, ""
+                func->name, reinterpret_cast<PyCFunction>(func), METH_QSCRIPT, ""
             };
             funcIndex++;
         }
