@@ -38,9 +38,16 @@ QScriptReturn GetDelayInTicks(QScriptArgs args)
 }
 
 /*
+QScriptReturn CoolFunc(QScriptArgs args)
+{
+	return qscript->RetFloat(qscript->GetObjectFloat(qscript->GetObjectElementByName(qscript->GetArgObject(args, 0), "coolfloat")) + qscript->GetArgFloat(args, 1));
+}
+*/
+/*
 QScriptReturn HudHintYEAAAH(QScriptArgs args)
 {
-	UTIL_HudHintText()
+	QScriptObject obj = qscript->GetArgObject(args, 0);
+	qscript->GetObjectElementByName(obj, "entitypointer");
 	return qscript->RetNone();
 }
 */
@@ -54,6 +61,13 @@ void InitQScriptServer()
 	qscript->CreateModuleFunction(mod, "GetTime", "", GetTime);
 	qscript->CreateModuleFunction(mod, "GetDelayInSeconds", "i", GetDelayInSeconds);
 	qscript->CreateModuleFunction(mod, "GetDelayInTicks", "f", GetDelayInTicks);
+	/*
+	QScriptObjectCreator creator = qscript->StartObject();
+	qscript->AddObject(creator, qscript->CreateFloatObject("coolfloat", 10.0));
+	qscript->AddObject(creator, qscript->CreateFunctionObject("coolfunc", "f", CoolFunc));
+	QScriptObject obj = qscript->FinishObject(creator, "epicobject");
+	qscript->CreateModuleObject(mod, obj);
+	*/
 }
 
 void LoadModsServer()

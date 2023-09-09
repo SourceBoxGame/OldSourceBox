@@ -98,7 +98,7 @@ QScriptModule CQScript::CreateModule(const char* name)
 }
 const char* CQScript::GetArgString(QScriptArgs args, int argnum)
 {
-    return ((const char**)(((QArgs*)args)->args))[argnum];
+    return *(const char**)&((QArgs*)args)->args[argnum];
 }
 
 char* CQScript::GetArgPermaString(QScriptArgs args, int argnum)
@@ -111,22 +111,27 @@ char* CQScript::GetArgPermaString(QScriptArgs args, int argnum)
 
 int CQScript::GetArgInt(QScriptArgs args, int argnum)
 {
-    return ((int*)(((QArgs*)args)->args))[argnum];
+    return *(int*)&((QArgs*)args)->args[argnum];
 }
 
 float CQScript::GetArgFloat(QScriptArgs args, int argnum)
 {
-    return ((float*)(((QArgs*)args)->args))[argnum];
+    return *(float*)&((QArgs*)args)->args[argnum];
 }
 
 bool CQScript::GetArgBool(QScriptArgs args, int argnum)
 {
-    return ((bool*)(((QArgs*)args)->args))[argnum];
+    return *(bool*)&((QArgs*)args)->args[argnum];
 }
 
 QScriptCallback CQScript::GetArgCallback(QScriptArgs args, int argnum)
 {
-    return (QScriptCallback)((QCallback**)(((QArgs*)args)->args))[argnum];
+    return (QScriptCallback)*(QCallback**)&((QArgs*)args)->args[argnum];
+}
+
+QScriptObject CQScript::GetArgObject(QScriptArgs args, int argnum)
+{
+    return (QScriptObject)*(QObject**)&((QArgs*)args)->args[argnum];
 }
 
 void CQScript::LoadFilesInDirectory(const char* folder, const char* filename)
@@ -303,13 +308,17 @@ QScriptObject CQScript::CreateBoolObject(const char* name, bool value)
     return (QScriptObject)obj;
 }
 
-QScriptObject CQScript::CreateFunctionObject(const char* name, QScriptFunction value)
+QScriptObject CQScript::CreateFunctionObject(const char* name, const char* args, QCFunc funcptr)
 {
+    QFunction* func = new QFunction();
+    func->name = name;
+    func->args = args;
+    func->func = funcptr;
     QObject* obj = new QObject();
     obj->count = 0;
     obj->name = name;
     obj->type = QType_Function;
-    obj->value_function = (QFunction*)value;
+    obj->value_function = func;
     return (QScriptObject)obj;
 }
 

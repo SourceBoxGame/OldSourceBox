@@ -26,6 +26,7 @@ public:
     virtual int GetArgInt(QScriptArgs args, int argnum) = 0;
     virtual float GetArgFloat(QScriptArgs args, int argnum) = 0;
     virtual QScriptCallback GetArgCallback(QScriptArgs args, int argnum) = 0;
+    virtual QScriptObject GetArgObject(QScriptArgs args, int argnum) = 0;
     virtual void LoadMods(const char* filename) = 0;
     virtual void LoadModsInDirectory(const char* folder, const char* filename) = 0;
     virtual void CallCallback(QScriptCallback callback, QScriptArgs args) = 0;
@@ -34,7 +35,7 @@ public:
     virtual QScriptObject CreateFloatObject(const char* name, float value) = 0;
     virtual QScriptObject CreateStringObject(const char* name, const char* value) = 0;
     virtual QScriptObject CreateBoolObject(const char* name, bool value) = 0;
-    virtual QScriptObject CreateFunctionObject(const char* name, QScriptFunction value) = 0;
+    virtual QScriptObject CreateFunctionObject(const char* name, const char* args, QCFunc funcptr) = 0;
     virtual QScriptObjectCreator StartObject() = 0;
     virtual void AddObject(QScriptObjectCreator creatorhandle, QScriptObject object) = 0;
     virtual QScriptObject FinishObject(QScriptObjectCreator creatorhandle, const char* name) = 0;
