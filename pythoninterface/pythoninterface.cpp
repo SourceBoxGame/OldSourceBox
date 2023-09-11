@@ -198,51 +198,37 @@ static PyObject* Python_Import_Module(void)
         QObject* obj = &objs[i];
         if (obj->type != QType_Object)
             continue;
-        int member_count = 0;
-        int method_count = 0;
-        for (int j = 0; j != obj->count; j++)
-        {
-            QObject* child = obj->objs[j];
-            switch (child->type)
-            {
-            case QType_Int:
-            case QType_Bool:
-            case QType_Float:
-            case QType_String:
-                member_count++;
-                break;
-            case QType_Function:
-                method_count++;
-                break;
-            default:
-                break;
-            }
-        }
-        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (method_count + 1));
-        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (member_count + 1));
+        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (obj->value_tree->method_count + obj->value_tree->immutable_methods_count + 1));
+        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (obj->value_tree->obj_count + obj->value_tree->immutable_objs_count + 1));
         int member_index = 0;
         int method_index = 0;
-        for (int j = 0; j != obj->count; j++)
+        for (int j = 0; j != obj->value_tree->obj_count; j++)
         {
-            QObject* child = obj->objs[j];
+            QObject* child = obj->value_tree->objs[j];
             Python_QObject_Member* memb;
-            switch (child->type)
-            {
-            case QType_Int:
-            case QType_Bool:
-            case QType_Float:
-            case QType_String:
-                memb = new Python_QObject_Member();
-                memb->value = child;
-                memb->parent = obj;
-                members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,memb };
-                break;
-            case QType_Function:
-                methods[method_index++] = { child->name,reinterpret_cast<PyCFunction>(child->value_function), METH_OBJQSCRIPT, 0 };
-                break;
-            default:
-                break;
-            }
+            memb = new Python_QObject_Member();
+            memb->value = child;
+            memb->parent = obj;
+            members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,memb };
+        }
+        for (int j = 0; j != obj->value_tree->method_count; j++)
+        {
+            QFunction* func = obj->value_tree->methods[j];
+            methods[method_index++] = { func->name,reinterpret_cast<PyCFunction>(func), METH_OBJQSCRIPT, 0 };
+        }
+        for (int j = 0; j != obj->value_tree->immutable_objs_count; j++)
+        {
+            QObject* child = obj->value_tree->immutable_objs[j];
+            Python_QObject_Member* memb;
+            memb = new Python_QObject_Member();
+            memb->value = child;
+            memb->parent = obj;
+            members[member_index++] = { child->name,Python_Get_QObject_Member,NULL,NULL,memb };
+        }
+        for (int j = 0; j != obj->value_tree->immutable_methods_count; j++)
+        {
+            QFunction* func = obj->value_tree->immutable_methods[j];
+            methods[method_index++] = { func->name,reinterpret_cast<PyCFunction>(func), METH_OBJQSCRIPT, 0 };
         }
         members[member_index++] = { NULL,NULL,NULL,NULL,NULL };
         methods[method_index++] = { NULL,NULL,NULL,NULL };

@@ -17,11 +17,31 @@ void CopyQObject(QObject **dst, QObject* src)
 {
 	*dst = new QObject();
 	memcpy(*dst, src, sizeof(QObject));
-	for (int i = 0; i != (*dst)->count; i++)
+	if ((*dst)->type != QType_Object)
+		return;
+	for (int i = 0; i != (*dst)->value_tree->obj_count; i++)
 	{
 		QObject* child;
-		CopyQObject(&child, src->objs[i]);
-		(*dst)->objs[i] = child;
+		CopyQObject(&child, src->value_tree->objs[i]);
+		(*dst)->value_tree->objs[i] = child;
+	}
+	for (int i = 0; i != (*dst)->value_tree->method_count; i++)
+	{
+		QFunction* func = new QFunction();
+		(*dst)->value_tree->methods[i] = func;
+		memcpy(func, src->value_tree->methods[i],sizeof(QFunction));
+	}
+	for (int i = 0; i != (*dst)->value_tree->immutable_objs_count; i++)
+	{
+		QObject* child;
+		CopyQObject(&child, src->value_tree->immutable_objs[i]);
+		(*dst)->value_tree->immutable_objs[i] = child;
+	}
+	for (int i = 0; i != (*dst)->value_tree->immutable_methods_count; i++)
+	{
+		QFunction* func = new QFunction();
+		(*dst)->value_tree->immutable_methods[i] = func;
+		memcpy(func, src->value_tree->immutable_methods[i], sizeof(QFunction));
 	}
 }
 

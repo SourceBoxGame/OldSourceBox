@@ -20,67 +20,96 @@ typedef struct {
 typedef QScriptReturn(*QCFunc)(QScriptArgs);
 #endif
 
-
 enum QType
 {
-	QType_None = 0,
-	QType_Int,
-	QType_Float,
-	QType_String,
-	QType_Bool,
-	QType_Object,
-	QType_Function
+    QType_None = 0,
+    QType_Int,
+    QType_Float,
+    QType_String,
+    QType_Bool,
+    QType_Object,
+    QType_Function
 };
 
-typedef struct 
+union QValue
 {
-	unsigned char native;
-	const char* name;
-	const char* args;
-	QCFunc func;
-	int etc_data;
+    int value_int;
+    float value_float;
+    const char* value_string;
+    bool value_bool;
+};
+
+typedef struct
+{
+    bool native;
+    QCFunc func;
 } QFunction;
 
 typedef struct
 {
-	int count;
-	const char* types;
-	void** args;
+    QType type;
+    QValue val;
+} QArg;
+
+typedef struct
+{
+    int count;
+    QArg* args;
 } QArgs;
 
 typedef struct
 {
-	void* lang;
-	void* callback;
-	void* object;
-	void* env;
+    void* lang;
+    void* callback;
+    void* object;
+    void* env;
 } QCallback;
 
 typedef struct
 {
-	enum QType type;
-	void* value;
+    enum QType type;
+    void* value;
 } QReturn;
 
-typedef struct QObject QObject;
-
-struct QObject
+typedef struct
 {
-	const char* name;
-	enum QType type;
-	int count;
-	union
-	{
-		int value_int;
-		float value_float;
-		const char* value_string;
-		bool value_bool;
-		void* value_raw;
-		QFunction* value_function;
-		QObject** objs;
-	};
-};
+    int count;
+    enum QType* types;
+} QParams;
 
+typedef struct 
+{
+    int count;
+    const char** names;
+    QParams* args;
+} QInterface;
+
+typedef struct 
+{
+    bool is_scripting;
+    union 
+    {
+        QFunction* func_native;
+        QCallback* func_scripting;
+    };
+} QObjectFunction;
+
+typedef struct 
+{
+    int vars_count;
+    enum QType* vars_types;
+    const char** vars_names;
+    int methods_count;
+    QObjectFunction* methods;
+    int sigs_count;
+    QInterface* sigs;
+} QClass;
+
+typedef struct 
+{
+    QClass* cls;
+    QValue vars[];
+} QObject;
 
 #ifdef __cplusplus
 }
