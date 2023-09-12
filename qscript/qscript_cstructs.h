@@ -89,7 +89,7 @@ typedef struct
     bool is_scripting;
     union 
     {
-        QFunction* func_native;
+        QCFunc func_native;
         QCallback* func_scripting;
     };
 } QObjectFunction;
@@ -102,7 +102,7 @@ typedef struct
     int methods_count;
     QObjectFunction* methods;
     int sigs_count;
-    QInterface* sigs;
+    QInterface** sigs;
 } QClass;
 
 typedef struct 

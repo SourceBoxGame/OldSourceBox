@@ -18,5 +18,7 @@ typedef QScriptReturn(*QCFunc)(QScriptArgs);
 DECLARE_POINTER_HANDLE(QScriptCallback);
 DECLARE_POINTER_HANDLE(QScriptObject);
 DECLARE_POINTER_HANDLE(QScriptObjectCreator);
+DECLARE_POINTER_HANDLE(QScriptClass);
+DECLARE_POINTER_HANDLE(QScriptClassCreator);
 
 #endif
