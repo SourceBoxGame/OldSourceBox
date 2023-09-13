@@ -300,7 +300,7 @@ void CSquirrelInterface::ImportModules(CUtlVector<QModule*>* modules)
     m_modules = modules;
 }
 
-void CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
+QScriptReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
 {
     HSQUIRRELVM SQ = (HSQUIRRELVM)callback->env;
     int top = sq_gettop(SQ);

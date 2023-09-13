@@ -34,7 +34,7 @@ Context.Context.line_just = 55 # should fit for everything on 80x26
 
 projects={
 	'game': [
-		'SourceBoxCPython/Python',
+		#'SourceBoxCPython/Python',
 		'appframework',
 		'bitmap',
 		'choreoobjects',
@@ -88,10 +88,10 @@ projects={
 		'video',
 		'qscript',
 		'lua',
-		'luainterface',
-		'squirrel',
-		'squirrelinterface',
-		'pythoninterface'
+		'luainterface'
+		#'squirrel',
+		#'squirrelinterface',
+		#'pythoninterface'
 		#'vscript'
 	],
 	'tests': [

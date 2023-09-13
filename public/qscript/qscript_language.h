@@ -22,7 +22,7 @@ public:
     virtual void Shutdown() = 0;
     virtual void ImportModules(CUtlVector<QModule*>* modules) = 0;
     virtual void LoadMod(const char* path) = 0;
-    virtual void CallCallback(QCallback* callback, QArgs* args) = 0;
+    virtual QReturn CallCallback(QCallback* callback, QArgs* args) = 0;
 };
 
 

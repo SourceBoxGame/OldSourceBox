@@ -17,9 +17,8 @@ typedef struct {
 typedef struct {
 	int unused;
 }* QScriptReturn;
-typedef QScriptReturn(*QCFunc)(QScriptArgs);
-#endif
-
+typedef struct QReturn QReturn;
+typedef QReturn(*QCFunc)(QScriptArgs);
 enum QType
 {
     QType_None = 0,
@@ -31,7 +30,7 @@ enum QType
     QType_Function
 };
 
-union QValue
+typedef union QValue
 {
     int value_int;
     float value_float;
@@ -39,22 +38,42 @@ union QValue
     bool value_bool;
 };
 
-typedef struct
+struct QReturn
 {
-    bool native;
-    QCFunc func;
-} QFunction;
+    enum QType type;
+    union QValue value;
+};
+#endif
 
-typedef struct
-{
-    QType type;
-    QValue val;
-} QArg;
+
 
 typedef struct
 {
     int count;
-    QArg* args;
+    enum QType* types;
+} QParams;
+
+typedef struct
+{
+    const char* name;
+    QParams params;
+    enum QType type;
+    QCFunc func;
+} QModuleFunction;
+
+typedef struct
+{
+    enum QType type;
+    union QValue val;
+} QArg;
+
+typedef struct QObject QObject;
+
+typedef struct
+{
+    QObject* self;
+    int count;
+    QArg args[];
 } QArgs;
 
 typedef struct
@@ -65,17 +84,8 @@ typedef struct
     void* env;
 } QCallback;
 
-typedef struct
-{
-    enum QType type;
-    void* value;
-} QReturn;
 
-typedef struct
-{
-    int count;
-    enum QType* types;
-} QParams;
+
 
 typedef struct 
 {
@@ -84,15 +94,25 @@ typedef struct
     QParams* args;
 } QInterface;
 
+enum QFunctionType
+{
+    QFunction_Native,
+    QFunction_Scripting,
+    QFunction_Module,
+    QFunction_Void,
+};
+
 typedef struct 
 {
-    bool is_scripting;
+    enum QFunctionType type;
     union 
     {
         QCFunc func_native;
         QCallback* func_scripting;
+        QModuleFunction* func_module;
+        void* func_void;
     };
-} QObjectFunction;
+} QFunction;
 
 typedef struct 
 {
@@ -100,16 +120,18 @@ typedef struct
     enum QType* vars_types;
     const char** vars_names;
     int methods_count;
-    QObjectFunction* methods;
+    QFunction* methods;
     int sigs_count;
     QInterface** sigs;
 } QClass;
 
-typedef struct 
+struct QObject
 {
     QClass* cls;
-    QValue vars[];
-} QObject;
+    union QValue vars[];
+};
+
+static enum QType strtotype[256] = { QType_None };
 
 #ifdef __cplusplus
 }

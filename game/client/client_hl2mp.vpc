@@ -30,7 +30,7 @@ $Project "Client (HL2MP)"
 		$File	"episodic/c_weapon_hopwire.cpp"
 		$File	"sourcebox/sourcebox_client_cmds.cpp"
 		$File	"qscript_client.cpp"
-		$File	"$SRCDIR\qscript\qscript_convar.cpp"
+		
 
 		$Folder	"HL2 DLL"
 		{

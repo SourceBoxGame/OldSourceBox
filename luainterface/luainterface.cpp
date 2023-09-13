@@ -30,7 +30,7 @@ public:
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
     virtual void LoadMod(const char* path);
-    virtual void CallCallback(QCallback* callback, QArgs* args);
+    virtual QReturn CallCallback(QCallback* callback, QArgs* args);
     void ExecuteLua(const char* code, int size);
 private:
     CUtlVector<QModule*>* m_modules;
@@ -114,147 +114,11 @@ void dumpstack(lua_State* L) {
     Warning("\n");
 }
 
-void Lua_Push_QObject(lua_State* L, QObject* obj)
-{
-    switch (obj->type)
-    {
-    case QType_Int:
-        lua_pushinteger(L, obj->value_int);
-        return;
-    case QType_String:
-        lua_pushstring(L, obj->value_string);
-        return;
-    case QType_Float:
-        lua_pushnumber(L, obj->value_float);
-        return;
-    case QType_Bool:
-        lua_pushboolean(L, obj->value_bool);
-        return;
-    default:
-        lua_pushnil(L);
-        return;
-    }
-}
-
-int Lua_QScript_Index(lua_State* L)
-{
-    QObject* obj = (QObject*)lua_touserdata(L, 1);
-    QTree* tree = obj->value_tree;
-    const char* name = lua_tostring(L, 2);
-    for (int i = 0; i < tree->immutable_objs_count; i++)
-    {
-        QObject* child = tree->immutable_objs[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        Lua_Push_QObject(L,child);
-        return 1;
-    }
-    for (int i = 0; i < tree->immutable_methods_count; i++)
-    {
-        QFunction* child = tree->immutable_methods[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        lua_pushcfunction(L, (lua_CFunction)child);
-        return 1;
-    }
-    for (int i = 0; i < tree->obj_count; i++)
-    {
-        QObject* child = tree->objs[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        Lua_Push_QObject(L, child);
-        return 1;
-    }
-    for (int i = 0; i < tree->method_count; i++)
-    {
-        QFunction* child = tree->methods[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        lua_pushcfunction(L, (lua_CFunction)child);
-        return 1;
-    }
-    lua_pushnil(L);
-    return 1;
-}
-
-void Lua_Set_QObject(lua_State* L, QObject* obj)
-{
-    switch (obj->type)
-    {
-    case QType_String:
-        if (lua_isstring(L, 3))
-            obj->value_string = lua_tolstring(L, 3, 0);
-        return;
-    case QType_Int:
-        if (lua_isinteger(L, 3))
-            obj->value_int = lua_tointeger(L, 3);
-        return;
-    case QType_Float:
-        if (lua_isnumber(L, 3))
-            obj->value_float = lua_tonumber(L, 3);
-        return;
-    case QType_Bool:
-        if (lua_isboolean(L, 3))
-            obj->value_bool = (bool)lua_toboolean(L, 3);
-        return;
-    default:
-        return;
-    }
-}
-
-int Lua_QScript_New_Index(lua_State* L)
-{
-    QObject* obj = (QObject*)lua_touserdata(L, 1);
-    QTree* tree = obj->value_tree;
-    const char* name = lua_tostring(L, 2);
-    for (int i = 0; i < tree->obj_count; i++)
-    {
-        QObject* child = tree->objs[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        Lua_Set_QObject(L, child);
-        return 0;
-    }
-    if (!lua_isfunction(L, 3))
-        return 0;
-    for (int i = 0; i < tree->method_count; i++)
-    {
-        QObjectFunction* child = tree->methods[i];
-        if (strcmp(child->name, name) != 0)
-            continue;
-        if (child->is_scripting)
-            free(child->scripting_func);
-        child->is_scripting = true;
-        child->scripting_func = new QCallback();
-        lua_pushvalue(L, 3);
-        child->scripting_func->callback = (void*)luaL_ref(L, LUA_REGISTRYINDEX);
-        child->scripting_func->lang = current_interface;
-        child->scripting_func->env = L;
-        return 0;
-    }
-    return 0;
-}
-
-QFunction Lua_QScript_Index_Func = {
-    '\x01',
-    "",
-    "",
-    (QCFunc)Lua_QScript_Index,
-    0
-};
-
-QFunction Lua_QScript_New_Index_Func = {
-    '\x01',
-    "",
-    "",
-    (QCFunc)Lua_QScript_New_Index,
-    0
-};
 
 void CLuaInterface::ExecuteLua(const char* code, int size)
 {
     lua_State* L = luaL_newstate();
-    luaL_openlibs(L);
+    //luaL_openlibs(L);
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -264,24 +128,6 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
             lua_pop(L, 1);  /* remove field */
             lua_createtable(L, 0, mod->functions->Count());
             luaL_setfuncsqscript(L, mod->functions->Base(), 0, mod->functions->Count());
-            for (int j = 0; j < mod->objs->Count(); j++)
-            {
-                QObject* obj = mod->objs->Element(j);
-                if (obj->type != QType_Object)
-                    continue;
-                int len = strlen(mod->name) + strlen(obj->name) + 2;
-                char* name = (char*)malloc(len *sizeof(char));
-                snprintf(name, len, "%s.%s",mod->name,obj->name);
-                luaL_newmetatable(L, name);
-                lua_pushstring(L,"__index");
-                lua_pushcfunction(L, (lua_CFunction)&Lua_QScript_Index_Func);
-                lua_settable(L, -3);
-                lua_pushstring(L, "__newindex");
-                lua_pushcfunction(L, (lua_CFunction)&Lua_QScript_New_Index_Func);
-                lua_settable(L, -3);
-                
-
-            }
             lua_pushvalue(L, -1);
             lua_setfield(L, 3, mod->name);  /* LOADED[modname] = module */
         }
@@ -301,34 +147,65 @@ void CLuaInterface::ImportModules(CUtlVector<QModule*>* modules)
     m_modules = modules;
 }
 
-void CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
+QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
 {
     lua_State* L = (lua_State*)callback->env;
     int top = lua_gettop(L);
     lua_rawgeti(L, LUA_REGISTRYINDEX, (int)callback->callback);
+    if (args->self)
+        lua_pushlightuserdata(L, args->self);
+    QReturn ret;
+    ret.type = QType_None;
     for (int i = 0; i != args->count; i++)
     {
-        switch (args->types[i])
+        QArg arg = args->args[i];  //ahoy its me mr krabs arg arg arg arg arg arg arg arg
+        switch (arg.type)
         {
         case 'i':
-            lua_pushinteger(L, (int)args->args[i]);
+            lua_pushinteger(L, arg.val.value_int);
             break;
         case 's':
-            lua_pushstring(L, (const char*)args->args[i]);
+            lua_pushstring(L, arg.val.value_string);
             break;
         case 'f':
-            lua_pushnumber(L, *(float*)&args->args[i]);
+            lua_pushnumber(L, arg.val.value_float);
             break;
         case 'b':
-            lua_pushboolean(L, (bool)args->args[i]);
+            lua_pushboolean(L, arg.val.value_bool);
             break;
         default:
             lua_settop(L, top);
-            return;
+            return ret;
         }
     }
-    if (lua_pcall(L, args->count, 0, 0))
+    if (lua_pcall(L, args->count, 1, 0))
         Warning("[Lua]: %s\n", lua_tostring(L, -1));
+    if (lua_isstring(L, -1))
+    {
+        ret.type = QType_String;
+        ret.value.value_string = lua_tolstring(L, 3, 0);
+        return ret;
+    }
+    if (lua_isinteger(L, -1))
+    {
+        ret.type = QType_String;
+        ret.value.value_int = lua_tointeger(L, 3);
+        return ret;
+    }
+    if (lua_isnumber(L, -1))
+    {
+        ret.type = QType_Float;
+        ret.value.value_float = lua_tonumber(L, 3);
+        return ret;
+    }
+    if (lua_isboolean(L, -1))
+    {
+        ret.type = QType_Bool;
+        ret.value.value_bool = (bool)lua_toboolean(L, 3);
+        return ret;
+    }
+    ret.type = QType_None;
+    return ret;
 }
 
 #endif

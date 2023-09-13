@@ -490,11 +490,12 @@ static int boxgc (lua_State *L) {
   return 0;
 }
 
-
-static const QFunction boxmt[] = {  /* box metamethods */
+/*
+static const QFunction boxmt[] = {  // box metamethods
    {1,"__gc", "s", boxgc,0},
    {1,"__close", "s", boxgc,0}
 };
+*/
 
 
 static void newbox (lua_State *L) {
@@ -957,15 +958,15 @@ LUALIB_API void luaL_setfuncs(lua_State* L, const luaL_Reg* l, int nup) {
 LUALIB_API void luaL_setfuncsqscript(lua_State* L, const QFunction** l, int nup, int count) {
     luaL_checkstack(L, nup, "too many upvalues");
     for (int i = 0; i < count; i++) {  /* fill the table with given functions */
-        if (l[i]->func == NULL)  /* place holder? */
+        if (l[i]->func_module->func == NULL)  /* place holder? */
             lua_pushboolean(L, 0);
         else {
             int j;
             for (j = 0; j < nup; j++)  /* copy upvalues to the top */
                 lua_pushvalue(L, -nup);
-            lua_pushcclosure(L, l[i], nup);  /* closure with those upvalues */
+            lua_pushcclosure(L, (lua_CFunction)l[i], nup);  /* closure with those upvalues */
         }
-        lua_setfield(L, -(nup + 2), l[i]->name);
+        lua_setfield(L, -(nup + 2), l[i]->func_module->name);
     }
     lua_pop(L, nup);  /* remove upvalues */
 }

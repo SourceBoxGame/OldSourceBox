@@ -511,91 +511,88 @@ l_sinline CallInfo *prepCallInfo (lua_State *L, StkId func, int nret,
 }
 
 extern void* current_interface;
-static int LuaActualCallback(lua_State* L, QFunction* func)
+static int LuaActualCallback(lua_State* L, QFunction* function)
 {
-    if (func->native)
-    {
-        return ((lua_CFunction)func)(L);
-    }
-    const char* argtypes = func->args;
-    if (strlen(argtypes) != lua_gettop(L)) // TODO : maybe error too
+    //if (func->type)
+    //{
+    //    return ((lua_CFunction)func)(L);
+    //}
+    QModuleFunction* func = function->func_module;
+    QParams params = func->params;
+    if (params.count != lua_gettop(L)) // TODO : maybe error too
         return 0;
-    QArgs* qargs = malloc(sizeof(QArgs));
-    qargs->types = argtypes;
-    qargs->count = lua_gettop(L);
-    qargs->args = (void**)malloc(qargs->count * sizeof(void*));
+    QArgs* qargs = (QArgs*)malloc(params.count*sizeof(QArg)+sizeof(QArgs));
+    qargs->count = params.count;
     for (int i = 0; i != qargs->count; i++)
     {
-        switch (argtypes[i])
+        qargs->args[i].type = params.types[i];
+        union QValue val;
+        switch (params.types[i])
         {
-        case 's':
+        case QType_String:
             if (lua_isstring(L, i + 1))
-                qargs->args[i] = lua_tolstring(L, i + 1, 0);
+                val.value_string = lua_tolstring(L, i + 1, 0);
             else
                 goto failure;
             break;
-        case 'i':
+        case QType_Int:
             if (lua_isinteger(L, i + 1))
-                qargs->args[i] = lua_tointeger(L, i + 1);
+                val.value_int = lua_tointeger(L, i + 1);
             else
                 goto failure;
             break;
-        case 'f':
-            if (lua_isnumber(L,i+1))
-            {
-                float chyba_ciebie_cos_pojebalo = lua_tonumber(L,i+1);
-                qargs->args[i] = (void*)((int)chyba_ciebie_cos_pojebalo);  //WHO FUCKING CARES IF A VOID* IS NOT A FLOAT  THEY ARE THE SAME FUCKING AMOUNT OF BYTES  ACCESSED IN THE EXACT SAME FUCKING WAY  AND IM SUPPOSED TO JUST ACCEPT THAT I CANNOT FORCE THESE FUCKING BYTES INTO THE EXACT SAME AMOUNT OF SPACE IT WOULD TAKE UP BUT WITH A DIFFERENT FUCKING AUTISM LABEL SLAPPED ON TOP OF IT??????????
-            }                                                              //we should start writing assembly instead
+        case QType_Float:
+            if (lua_isnumber(L, i + 1))
+                val.value_float = (float)lua_tonumber(L,i + 1);
             else
                 goto failure;
             break;
-        case 'b':
+        case QType_Bool:
             if (lua_isboolean(L, i + 1))
-            {
-                qargs->args[i] = (void*)((char)lua_toboolean(L, i+1));
-            }
+                val.value_bool = lua_toboolean(L, i + 1);
+            else
+                goto failure;
             break;
-        case 'p':
+        /*case QType_Function:
             if (lua_isfunction(L, i + 1))
             {
-                QCallback* callback = malloc(sizeof(QCallback));
+                QCallback* callback = (QCallback*)malloc(sizeof(QCallback));
                 lua_pushvalue(L, i + 1);
                 callback->callback = luaL_ref(L, LUA_REGISTRYINDEX);
                 callback->lang = current_interface;
                 callback->env = L;
-                qargs->args[i] = callback;
+                qargs->args[i].val = callback;
             }
             else
                 goto failure;
-            break;
+            break;*/
         default:
             goto failure;
             break;
         }
+        qargs->args[i].val = val;
         continue;
     failure:
-        free(qargs->args);
         free(qargs);
         return 0;
     }
-    QReturn* ret = (QReturn*)(func->func((QScriptArgs)qargs));
+    QReturn ret = func->func((QScriptArgs)qargs);
     
-    free(qargs->args);
     free(qargs);
 
-    switch (ret->type)
+    switch (ret.type)
     {
     case QType_Int:
-        lua_pushinteger(L, (int)(ret->value));
+        lua_pushinteger(L, ret.value.value_int);
         return 1;
     case QType_Float:
-        lua_pushnumber(L, *(float*)(&ret->value));
+        lua_pushnumber(L, ret.value.value_float);
         return 1;
     case QType_String:
-        lua_pushstring(L, (const char*)(ret->value));
+        lua_pushstring(L, ret.value.value_string);
         return 1;
     case QType_Bool:
-        lua_pushboolean(L, ret->value != 0);
+        lua_pushboolean(L, ret.value.value_bool);
         return 1;
     default:
         return 0;
@@ -681,10 +678,10 @@ CallInfo *luaD_precall (lua_State *L, StkId func, int nresults) {
  retry:
   switch (ttypetag(s2v(func))) {
     case LUA_VCCL:  /* C closure */
-      precallC(L, func, nresults, clCvalue(s2v(func))->f);
+      precallC(L, func, nresults, (QFunction*)clCvalue(s2v(func))->f);
       return NULL;
     case LUA_VLCF:  /* light C function */
-      precallC(L, func, nresults, fvalue(s2v(func)));
+      precallC(L, func, nresults, (QFunction*)fvalue(s2v(func)));
       return NULL;
     case LUA_VLCL: {  /* Lua function */
       CallInfo *ci;

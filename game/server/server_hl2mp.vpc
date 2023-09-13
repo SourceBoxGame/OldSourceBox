@@ -49,7 +49,6 @@ $Project "Server (HL2MP)"
 		$File   "physgun.cpp"
 		$File	"sourcebox\sourcebox_server_cmds.cpp"
 		$File	"qscript_server.cpp"
-		$File	"$SRCDIR\qscript\qscript_convar.cpp"
 		
 		$Folder	"HL2 DLL"
 		{

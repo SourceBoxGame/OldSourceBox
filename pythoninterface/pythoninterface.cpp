@@ -327,7 +327,7 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
     }
 }
 
-void CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
+QScriptReturn CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
 {
     if (args->count)
     {

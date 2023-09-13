@@ -3,6 +3,7 @@
 #include "convar.h"
 #include "edict.h"
 extern CGlobalVars* gpGlobals;
+/*
 extern IQScript* qscript;
 
 QScriptReturn QScriptClientMsg(QScriptArgs args)
@@ -36,7 +37,7 @@ QScriptReturn GetDelayInTicks(QScriptArgs args)
 {
 	return qscript->RetFloat(gpGlobals->tickcount + qscript->GetArgInt(args, 0));
 }
-
+*/
 /*
 QScriptReturn CoolFunc(QScriptArgs args)
 {
@@ -54,6 +55,7 @@ QScriptReturn HudHintYEAAAH(QScriptArgs args)
 
 void InitQScriptServer()
 {
+	/*
 	QScriptModule mod = qscript->CreateModule("sourcebox_server");
 	qscript->CreateModuleFunction(mod, "Msg", "s", QScriptClientMsg);
 	qscript->CreateModuleFunction(mod, "RegisterCmd", "sp", RegisterCmd);
@@ -61,6 +63,7 @@ void InitQScriptServer()
 	qscript->CreateModuleFunction(mod, "GetTime", "", GetTime);
 	qscript->CreateModuleFunction(mod, "GetDelayInSeconds", "i", GetDelayInSeconds);
 	qscript->CreateModuleFunction(mod, "GetDelayInTicks", "f", GetDelayInTicks);
+	*/
 	/*
 	QScriptObjectCreator creator = qscript->StartObject();
 	qscript->AddObject(creator, qscript->CreateFloatObject("coolfloat", 10.0));
@@ -72,6 +75,8 @@ void InitQScriptServer()
 
 void LoadModsServer()
 {
+	/*
 	qscript->LoadMods("autorun_server");
 	qscript->LoadModsInDirectory("server", "cmds");
+	*/
 }

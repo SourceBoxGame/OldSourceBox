@@ -4,25 +4,31 @@
 
 extern IQScript* qscript;
 
-QScriptReturn QScriptClientMsg(QScriptArgs args)
+QReturn QScriptClientMsg(QScriptArgs args)
 {
-	Msg("%s\n", qscript->GetArgString(args, 0));
-	return qscript->RetNone();
+	Msg("IT LIVES!!!!!1\n");
+	QReturn ret;
+	ret.type = QType_None;
+	return ret;
+	//Msg("%s\n", qscript->GetArgString(args, 0));
+	//return qscript->RetNone();
 }
-
+/*
 QScriptReturn RegisterCmd(QScriptArgs args)
 {
 	new ConCommandQScript(qscript->GetArgPermaString(args, 0), qscript->GetArgCallback(args, 1));
 	return qscript->RetNone();
 }
-
-
+*/
+static QModuleDefFunc sourcebox_client[] = {
+	{QScriptClientMsg,"Msg",QType_None,"s"},
+	{0,0,QType_None,0}
+	//{RegisterCmd,"RegisterCmd",QType_None,"sp"},
+};
 
 void InitQScriptClient()
 {
-	QScriptModule mod = qscript->CreateModule("sourcebox_client");
-	qscript->CreateModuleFunction(mod, "Msg", "s", QScriptClientMsg);
-	qscript->CreateModuleFunction(mod, "RegisterCmd", "sp", RegisterCmd);
+	QScriptModule mod = qscript->CreateModule("sourcebox_client",(QModuleDefFunc*)&sourcebox_client);
 }
 
 void LoadModsClient()
