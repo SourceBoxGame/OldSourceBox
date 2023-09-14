@@ -26,6 +26,7 @@ public:
 	virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent = 0);
 	virtual void AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func);
 	virtual void AddVariable(QScriptClassCreator creator, const char* name, QType type);
+	virtual void AddString(QScriptClassCreator creator, const char* name, int size);
 	virtual QScriptClass FinishClass(QScriptClassCreator creator);
 	virtual QScriptObject CreateObject(QScriptClass cls);
 	virtual int GetObjectValueIndex(QScriptObject object, const char* name);
@@ -36,6 +37,7 @@ public:
 	virtual QReturn CallObjectMethod(QScriptObject object, int index, QScriptArgs arguments);
 	virtual QValue GetArgValue(QScriptArgs args, int index);
 	virtual QType GetArgType(QScriptArgs args, int index);
+	virtual void InitalizeObject(QScriptObject object);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

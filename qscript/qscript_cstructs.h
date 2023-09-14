@@ -35,6 +35,7 @@ typedef union QValue
     int value_int;
     float value_float;
     const char* value_string;
+    char* value_modifiable_string;
     bool value_bool;
 };
 
@@ -117,11 +118,11 @@ typedef struct
 
 typedef struct 
 {
-
     const char* name;
     int vars_count;
     enum QType* vars_types;
     const char** vars_names;
+    int* vars_sizes;
     int methods_count;
     QFunction* methods;
     int sigs_count;

@@ -147,26 +147,59 @@ int Lua_QScript_Index(lua_State* L)
     
 }
 
-int Lua_QScript_Class(lua_State* L)
+int Lua_QScript_Object(lua_State* L)
 {
+    QClass* cls = 0;
     if (!lua_islightuserdata(L, 1))
-        return 0;
-    QClass* cls = (QClass*)lua_touserdata(L, 1);
+    {
+        if(!(cls = (QClass*)luaL_checkudata(L,1,"QSCRIPT_CLASS")))
+            return 0;
+    }
+    else
+        cls = (QClass*)lua_touserdata(L, 1);
     QObject* obj = (QObject*)lua_newuserdata(L, sizeof(QObject)+cls->vars_count*sizeof(QValue));
     obj->cls = cls;
+    g_pQScript->InitalizeObject((QScriptObject)obj);
+    luaL_setmetatable(L, "QSCRIPT_OBJECT");
     return 1;
 }
+/*
+MyEnt = class(sourcebox_server.ents.CBaseEntity)
+MyEnt.classname = "your_mom"
+...
+sourcebox_server.RegisterEntity(MyEnt)
 
+
+*/
+
+int Lua_QScript_Class(lua_State* L)
+{
+    QClass* cls = 0;
+    if (lua_gettop(L) != 0)
+    {
+        if (!lua_islightuserdata(L, 1))
+        {
+            if (!(cls = (QClass*)luaL_checkudata(L, 1, "QSCRIPT_CLASS")))
+                return 0;
+        }
+        else
+            cls = (QClass*)lua_touserdata(L, 1);
+    }
+    QClass* child = new QClass();
+    child->
+}
 
 void CLuaInterface::ExecuteLua(const char* code, int size)
 {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
-    luaL_newmetatable(L, "QSCRIPT_CLASS");
+    luaL_newmetatable(L, "QSCRIPT_OBJECT");
     lua_pushstring(L, "__index");
     lua_pushcclosure(L, Lua_QScript_Index, 0);
     lua_settable(L, -3);
     lua_pop(L, 1);
+    lua_pushcclosure(L, Lua_QScript_Object, 0);
+    lua_setglobal(L, "object");
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -182,8 +215,6 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
                 lua_pushlightuserdata(L, cls);
                 lua_setfield(L, -2, cls->name);
             }
-            lua_pushcclosure(L, Lua_QScript_Class, 0);
-            lua_setfield(L, -2, "class");
             lua_pushvalue(L, -1);
             lua_setfield(L, 3, mod->name);  /* LOADED[modname] = module */
         }

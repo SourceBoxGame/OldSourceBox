@@ -30,6 +30,7 @@ union QValue
     int value_int;
     float value_float;
     const char* value_string;
+    char* value_modifiable_string;
     bool value_bool;
 };
 struct QReturn
