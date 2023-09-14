@@ -104,6 +104,7 @@ enum QFunctionType
 
 typedef struct 
 {
+    int always_zero;
     enum QFunctionType type;
     union 
     {
@@ -116,6 +117,8 @@ typedef struct
 
 typedef struct 
 {
+
+    const char* name;
     int vars_count;
     enum QType* vars_types;
     const char** vars_names;

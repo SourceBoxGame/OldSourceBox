@@ -6,7 +6,7 @@ extern IQScript* qscript;
 
 QReturn QScriptClientMsg(QScriptArgs args)
 {
-	Msg("IT LIVES!!!!!1\n");
+	Msg("%s\n",qscript->GetArgValue(args,0).value_string);
 	QReturn ret;
 	ret.type = QType_None;
 	return ret;
@@ -29,6 +29,10 @@ static QModuleDefFunc sourcebox_client[] = {
 void InitQScriptClient()
 {
 	QScriptModule mod = qscript->CreateModule("sourcebox_client",(QModuleDefFunc*)&sourcebox_client);
+	QScriptClassCreator testclass = qscript->StartClass("testclass");
+	qscript->AddVariable(testclass, "testvar", QType_String);
+	QScriptClass testclass_made = qscript->FinishClass(testclass);
+	qscript->CreateModuleClass(mod, testclass_made);
 }
 
 void LoadModsClient()

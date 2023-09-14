@@ -20,10 +20,10 @@ public:
     virtual void Shutdown() = 0;
     virtual QScriptModule CreateModule(const char* name, QModuleDefFunc* funcs) = 0;
     virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, QType* types, QType returntype, QCFunc funcptr) = 0;
-    virtual void CreateModuleObject(QScriptModule module, QScriptClass object) = 0;
+    virtual void CreateModuleClass(QScriptModule module, QScriptClass object) = 0;
     virtual void LoadMods(const char* filename) = 0;
     virtual void LoadModsInDirectory(const char* folder, const char* filename) = 0;
-    virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent) = 0;
+    virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent = 0) = 0;
     virtual void AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func) = 0;
     virtual void AddVariable(QScriptClassCreator creator, const char* name, QType type) = 0;
     virtual QScriptClass FinishClass(QScriptClassCreator creator) = 0;
@@ -31,9 +31,11 @@ public:
     virtual int GetObjectValueIndex(QScriptObject object, const char* name) = 0;
     virtual void SetObjectValue(QScriptObject object, int index, QValue val) = 0;
     virtual QValue GetObjectValue(QScriptObject object, int index) = 0;
+    virtual QType GetObjectValueType(QScriptObject object, int index) = 0;
     virtual int GetObjectMethodIndex(QScriptObject object, const char* name) = 0;
     virtual QReturn CallObjectMethod(QScriptObject object, int index, QScriptArgs arguments) = 0;
-    
+    virtual QValue GetArgValue(QScriptArgs args, int index) = 0;
+    virtual QType GetArgType(QScriptArgs args, int index) = 0;
 };
 
 

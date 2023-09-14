@@ -513,10 +513,10 @@ l_sinline CallInfo *prepCallInfo (lua_State *L, StkId func, int nret,
 extern void* current_interface;
 static int LuaActualCallback(lua_State* L, QFunction* function)
 {
-    //if (func->type)
-    //{
-    //    return ((lua_CFunction)func)(L);
-    //}
+    if (function->always_zero)
+    {
+        return ((lua_CFunction)function)(L);
+    }
     QModuleFunction* func = function->func_module;
     QParams params = func->params;
     if (params.count != lua_gettop(L)) // TODO : maybe error too

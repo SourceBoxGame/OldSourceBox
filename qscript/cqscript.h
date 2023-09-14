@@ -20,10 +20,10 @@ public:
 	virtual void Shutdown();
 	virtual QScriptModule CreateModule(const char* name, QModuleDefFunc* funcs);
 	virtual QScriptFunction CreateModuleFunction(QScriptModule module, const char* name, QType* types, QType returntype, QCFunc funcptr);
-	virtual void CreateModuleObject(QScriptModule module, QScriptClass object);
+	virtual void CreateModuleClass(QScriptModule module, QScriptClass object);
 	virtual void LoadMods(const char* filename);
 	virtual void LoadModsInDirectory(const char* folder, const char* filename);
-	virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent);
+	virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent = 0);
 	virtual void AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func);
 	virtual void AddVariable(QScriptClassCreator creator, const char* name, QType type);
 	virtual QScriptClass FinishClass(QScriptClassCreator creator);
@@ -31,8 +31,11 @@ public:
 	virtual int GetObjectValueIndex(QScriptObject object, const char* name);
 	virtual void SetObjectValue(QScriptObject object, int index, QValue val);
 	virtual QValue GetObjectValue(QScriptObject object, int index);
+	virtual QType GetObjectValueType(QScriptObject object, int index);
 	virtual int GetObjectMethodIndex(QScriptObject object, const char* name);
 	virtual QReturn CallObjectMethod(QScriptObject object, int index, QScriptArgs arguments);
+	virtual QValue GetArgValue(QScriptArgs args, int index);
+	virtual QType GetArgType(QScriptArgs args, int index);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

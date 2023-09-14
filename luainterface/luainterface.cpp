@@ -15,8 +15,10 @@
 #include "convar.h"
 #include "tier1.h"
 #include "filesystem.h"
+#include "qscript.h"
 
 IFileSystem* g_pFullFileSystem = 0;
+IQScript* g_pQScript = 0;
 extern "C"
 {
     void* current_interface = 0;
@@ -49,6 +51,7 @@ bool CLuaInterface::Connect(CreateInterfaceFn factory)
     ConnectTier1Libraries(&factory, 1);
     ConVar_Register();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
+    g_pQScript = (IQScript*)factory(QSCRIPT_INTERFACE_VERSION, NULL);
     current_interface = this;
     return true;
 }
@@ -114,11 +117,56 @@ void dumpstack(lua_State* L) {
     Warning("\n");
 }
 
+int Lua_QScript_Index(lua_State* L)
+{
+    QObject* obj = (QObject*)lua_touserdata(L, 1);
+    const char* name = lua_tostring(L, 2);
+    int index = g_pQScript->GetObjectValueIndex((QScriptObject)obj, name);
+    if (index == -1)
+        return 0;
+    QValue val = g_pQScript->GetObjectValue((QScriptObject)obj, index);
+    QType type = g_pQScript->GetObjectValueType((QScriptObject)obj, index);
+    switch (type)
+    {
+    case QType_Int:
+        lua_pushinteger(L, val.value_int);
+        return 1;
+    case QType_String:
+        lua_pushstring(L, val.value_string);
+        return 1;
+    case QType_Float:
+        lua_pushnumber(L, val.value_float);
+        return 1;
+    case QType_Bool:
+        lua_pushboolean(L, val.value_bool);
+        return 1;
+    default:
+        lua_pushnil(L);
+        return 1;
+    }
+    
+}
+
+int Lua_QScript_Class(lua_State* L)
+{
+    if (!lua_islightuserdata(L, 1))
+        return 0;
+    QClass* cls = (QClass*)lua_touserdata(L, 1);
+    QObject* obj = (QObject*)lua_newuserdata(L, sizeof(QObject)+cls->vars_count*sizeof(QValue));
+    obj->cls = cls;
+    return 1;
+}
+
 
 void CLuaInterface::ExecuteLua(const char* code, int size)
 {
     lua_State* L = luaL_newstate();
-    //luaL_openlibs(L);
+    luaL_openlibs(L);
+    luaL_newmetatable(L, "QSCRIPT_CLASS");
+    lua_pushstring(L, "__index");
+    lua_pushcclosure(L, Lua_QScript_Index, 0);
+    lua_settable(L, -3);
+    lua_pop(L, 1);
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -128,6 +176,14 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
             lua_pop(L, 1);  /* remove field */
             lua_createtable(L, 0, mod->functions->Count());
             luaL_setfuncsqscript(L, mod->functions->Base(), 0, mod->functions->Count());
+            for (int j = 0; j < mod->classes->Count(); j++)
+            {
+                QClass* cls = mod->classes->Element(j);
+                lua_pushlightuserdata(L, cls);
+                lua_setfield(L, -2, cls->name);
+            }
+            lua_pushcclosure(L, Lua_QScript_Class, 0);
+            lua_setfield(L, -2, "class");
             lua_pushvalue(L, -1);
             lua_setfield(L, 3, mod->name);  /* LOADED[modname] = module */
         }

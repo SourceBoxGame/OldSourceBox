@@ -92,7 +92,7 @@ QScriptFunction CQScript::CreateModuleFunction(QScriptModule module, const char*
     return (QScriptFunction)func;
 }
 
-void CQScript::CreateModuleObject(QScriptModule module, QScriptClass object)
+void CQScript::CreateModuleClass(QScriptModule module, QScriptClass object)
 {
     QModule* mod = (QModule*)module;
     QClass* obj = (QClass*)object;
@@ -120,6 +120,7 @@ QScriptModule CQScript::CreateModule(const char* name, QModuleDefFunc* funcs)
         func->name = funcs[i].name;
         func->func = funcs[i].func;
         QFunction* final_func = new QFunction();
+        final_func->always_zero = 0;
         final_func->func_module = func;
         final_func->type = QFunction_Module;
         mod->functions->AddToTail(final_func);
@@ -221,6 +222,7 @@ void CQScript::LoadModsInDirectory(const char* folder, const char* filename)
 struct QClassCreator
 {
     QClass* parent;
+    const char* name;
     CUtlVector<const char*> method_names;
     CUtlVector<int> method_params_counts;
     CUtlVector<QType*> method_params;
@@ -232,6 +234,7 @@ struct QClassCreator
 QScriptClassCreator CQScript::StartClass(const char* name, QScriptClass parent)
 {
     QClassCreator* cr = new QClassCreator();
+    cr->name = name;
     cr->parent = (QClass*)parent;
     return (QScriptClassCreator)cr;
 }
@@ -287,6 +290,7 @@ QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
     {
         for (int i = 0; i != cr->methods.Count();i++)
         {
+            cl->methods[cr->parent->methods_count + i].always_zero = 0;
             cl->methods[cr->parent->methods_count + i].type = QFunction_Native;
             cl->methods[cr->parent->methods_count + i].func_native = cr->methods[i];
         }
@@ -301,6 +305,7 @@ QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
         for (int i = 0; i != cr->methods.Count();i++)
         {
             cl->methods[i].type = QFunction_Native;
+            cl->methods[i].always_zero = 0;
             cl->methods[i].func_native = cr->methods[i];
         }
         cl->sigs_count = 1;
@@ -380,4 +385,22 @@ QReturn CQScript::CallObjectMethod(QScriptObject object, int index, QScriptArgs 
     {
         return func->func_native((QScriptArgs)args);
     }
+}
+
+QType CQScript::GetArgType(QScriptArgs args, int index)
+{
+    QArgs* a = (QArgs*)args;
+    return a->args[index].type;
+}
+
+QValue CQScript::GetArgValue(QScriptArgs args, int index)
+{
+    QArgs* a = (QArgs*)args;
+    return a->args[index].val;
+}
+
+QType CQScript::GetObjectValueType(QScriptObject object, int index)
+{
+    QObject* obj = (QObject*)object;
+    return obj->cls->vars_types[index];
 }
