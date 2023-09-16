@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "cqscript.h"
 #include "filesystem.h"
+#include "utlstring.h"
 
 static CQScript s_QScript;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CQScript, IQScript, QSCRIPT_INTERFACE_VERSION, s_QScript);
@@ -219,18 +220,7 @@ void CQScript::LoadModsInDirectory(const char* folder, const char* filename)
     }
 }
 
-struct QClassCreator
-{
-    QClass* parent;
-    const char* name;
-    CUtlVector<const char*> method_names;
-    CUtlVector<int> method_params_counts;
-    CUtlVector<QType*> method_params;
-    CUtlVector<QCFunc> methods;
-    CUtlVector<const char*> var_names;
-    CUtlVector<QType> var_types;
-    CUtlVector<int> var_sizes;
-};
+
 
 QScriptClassCreator CQScript::StartClass(const char* name, QScriptClass parent)
 {
@@ -240,32 +230,53 @@ QScriptClassCreator CQScript::StartClass(const char* name, QScriptClass parent)
     return (QScriptClassCreator)cr;
 }
 
-void CQScript::AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func)
+void CQScript::AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func, bool is_private)
 {
     QClassCreator* cr = (QClassCreator*)creator;
-    cr->method_names.AddToTail(name);
-    cr->method_params.AddToTail(params);
+    QClassCreatorMethod* meth = new QClassCreatorMethod();
+    meth->name = name;
+    meth->params = params;
     int i = 0;
     for (i = 0; params[i]; i++);
     {}
-    cr->method_params_counts.AddToTail(i);
-    cr->methods.AddToTail(func);
+    meth->params_count = i;
+    meth->is_scripting = false;
+    meth->native_func = func;
+    meth->is_private = is_private;
+    cr->methods.AddToTail(meth);
 }
 
-void CQScript::AddVariable(QScriptClassCreator creator, const char* name, QType type)
+void CQScript::AddScriptingMethod(QScriptClassCreator creator, const char* name, QScriptCallback callback, bool is_private)
 {
     QClassCreator* cr = (QClassCreator*)creator;
-    cr->var_names.AddToTail(name);
-    cr->var_types.AddToTail(type);
-    cr->var_sizes.AddToTail(0);
+    QClassCreatorMethod* meth = new QClassCreatorMethod();
+    meth->name = name;
+    meth->is_scripting = true;
+    meth->scripting_func = (QCallback*)callback;
+    meth->is_private = is_private;
+    cr->methods.AddToTail(meth);
 }
 
-void CQScript::AddString(QScriptClassCreator creator, const char* name, int size)
+void CQScript::AddVariable(QScriptClassCreator creator, const char* name, QType type, bool is_private)
 {
     QClassCreator* cr = (QClassCreator*)creator;
-    cr->var_names.AddToTail(name);
-    cr->var_types.AddToTail(QType_String);
-    cr->var_sizes.AddToTail(size);
+    QVar* var = new QVar();
+    var->name = name;
+    var->is_private = is_private;
+    var->type = type;
+    var->size = 0;
+    cr->vars.AddToTail(var);
+}
+
+void CQScript::AddString(QScriptClassCreator creator, const char* name, int size, bool is_private)
+{
+    QClassCreator* cr = (QClassCreator*)creator;
+    QVar* var = new QVar();
+    var->name = name;
+    var->is_private = is_private;
+    var->type = QType_String;
+    var->size = size;
+    cr->vars.AddToTail(var);
 }
 
 QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
@@ -276,61 +287,77 @@ QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
     {
         cl->methods_count = cr->parent->methods_count + cr->methods.Count();
         cl->sigs_count = cr->parent->sigs_count + 1;
-        cl->vars_count = cr->parent->vars_count + cr->var_names.Count();
-        cl->methods = (QFunction*)malloc(cl->methods_count * sizeof(QFunction));
-        cl->sigs = (QInterface**)malloc(cl->sigs_count * sizeof(QInterface*));
-        cl->vars_names = (const char**)malloc(cl->vars_count * sizeof(const char*));
-        cl->vars_types = (QType*)malloc(cl->vars_count * sizeof(QType));
-        cl->vars_sizes = (int*)malloc(cl->vars_count * sizeof(int));
+        cl->vars_count = cr->parent->vars_count + cr->vars.Count();
+        cl->methods = new QFunction[cl->methods_count];
+        cl->sigs = new QInterface*[cl->sigs_count];
+        cl->vars = new QVar[cl->vars_count];
         memcpy(cl->methods, cr->parent->methods, cr->parent->methods_count * sizeof(QFunction));
         memcpy(cl->sigs, cr->parent->sigs, cr->parent->sigs_count * sizeof(QInterface*));
-        memcpy(cl->vars_names, cr->parent->vars_names, cr->parent->vars_count * sizeof(const char*));
-        memcpy(cl->vars_types, cr->parent->vars_types, cr->parent->vars_count * sizeof(QType));
-        memcpy(cl->vars_sizes, cr->parent->vars_sizes, cr->parent->vars_count * sizeof(int));
+        memcpy(cl->vars, cr->parent->vars, cr->parent->vars_count * sizeof(QVar));
     }
     QInterface* in = new QInterface();
     in->args = (QParams*)malloc(cr->methods.Count() * sizeof(QParams*));
+    in->names = (const char**)malloc(cr->methods.Count() * sizeof(const char*));
     for (int i = 0; i != cr->methods.Count(); i++)
     {
-        in->args[i].count = cr->method_params_counts[i];
-        in->args[i].types = (QType*)malloc(in->args[i].count * sizeof(QType));
-        memcpy(in->args[i].types, cr->method_params.Base(), in->args[i].count * sizeof(QType));
+        QClassCreatorMethod* meth = cr->methods[i];
+        if (meth->params)
+        {
+            in->args[i].count = meth->params_count;
+            in->args[i].types = new QType[in->args[i].count];
+            memcpy(in->args[i].types, meth->params, in->args[i].count * sizeof(QType));
+        }
+        in->names[i] = meth->name;
     }
-    in->names = (const char**)malloc(cr->methods.Count() * sizeof(const char*));
-    memcpy(in->names, cr->method_names.Base(), cr->methods.Count() * sizeof(const char*));
     if (cr->parent)
     {
         for (int i = 0; i != cr->methods.Count();i++)
         {
             cl->methods[cr->parent->methods_count + i].always_zero = 0;
-            cl->methods[cr->parent->methods_count + i].type = QFunction_Native;
-            cl->methods[cr->parent->methods_count + i].func_native = cr->methods[i];
+            if (cr->methods[i]->is_scripting)
+            {
+                cl->methods[cr->parent->methods_count + i].type = QFunction_Scripting;
+                cl->methods[cr->parent->methods_count + i].func_scripting = cr->methods[i]->scripting_func;
+            }
+            else
+            {
+                cl->methods[cr->parent->methods_count + i].type = QFunction_Native;
+                cl->methods[cr->parent->methods_count + i].func_native = cr->methods[i]->native_func;
+            }
         }
         cl->sigs[cr->parent->sigs_count] = in;
-        memcpy(&cl->vars_names[cr->parent->vars_count], cr->var_names.Base(), cr->var_names.Count() * sizeof(const char*));
-        memcpy(&cl->vars_types[cr->parent->vars_count], cr->var_types.Base(), cr->var_types.Count() * sizeof(QType));
-        memcpy(&cl->vars_sizes[cr->parent->vars_count], cr->var_sizes.Base(), cr->var_sizes.Count() * sizeof(int));
+        for (int i = 0; i < cr->vars.Count(); i++)
+        {
+            memcpy(&cl->vars[cr->parent->vars_count + i], cr->vars[i], sizeof(QVar));
+        }
     }
     else
     {
         cl->methods_count = cr->methods.Count();
-        cl->methods = (QFunction*)malloc(cr->methods.Count() + sizeof(QFunction));
+        cl->methods = new QFunction[cr->methods.Count()];
         for (int i = 0; i != cr->methods.Count();i++)
         {
-            cl->methods[i].type = QFunction_Native;
             cl->methods[i].always_zero = 0;
-            cl->methods[i].func_native = cr->methods[i];
+            if (cr->methods[i]->is_scripting)
+            {
+                cl->methods[i].type = QFunction_Scripting;
+                cl->methods[i].func_scripting = cr->methods[i]->scripting_func;
+            }
+            else
+            {
+                cl->methods[i].type = QFunction_Native;
+                cl->methods[i].func_native = cr->methods[i]->native_func;
+            }
         }
         cl->sigs_count = 1;
-        cl->sigs = (QInterface**)malloc(sizeof(QInterface*));
+        cl->sigs = new QInterface*[1];
         cl->sigs[0] = in;
-        cl->vars_count = cr->var_names.Count();
-        cl->vars_names = (const char**)malloc(cl->vars_count * sizeof(const char*));
-        cl->vars_types = (QType*)malloc(cl->vars_count * sizeof(QType));
-        cl->vars_sizes = (int*)malloc(cl->vars_count * sizeof(int));
-        memcpy(cl->vars_names, cr->var_names.Base(), cr->var_names.Count() * sizeof(const char*));
-        memcpy(cl->vars_types, cr->var_types.Base(), cr->var_types.Count() * sizeof(QType));
-        memcpy(cl->vars_sizes, cr->var_sizes.Base(), cr->var_sizes.Count() * sizeof(int));
+        cl->vars_count = cr->vars.Count();
+        cl->vars = new QVar[cl->vars_count];
+        for (int i = 0; i < cl->vars_count; i++)
+        {
+            memcpy(&cl->vars[i], (cr->vars[i]), sizeof(QVar));
+        }
     }
     cl->name = cr->name;
     return (QScriptClass)cl;
@@ -347,9 +374,11 @@ QScriptObject CQScript::CreateObject(QScriptClass cls)
 int CQScript::GetObjectValueIndex(QScriptObject object, const char* name)
 {
     QObject* obj = (QObject*)object;
+    const char* othername;
     for (int i = 0; i < obj->cls->vars_count; i++)
     {
-        if (strcmp(obj->cls->vars_names[i], name) == 0)
+        othername = obj->cls->vars[i].name;
+        if (strcmp(othername, name) == 0)
         {
             return i;
         }
@@ -357,10 +386,38 @@ int CQScript::GetObjectValueIndex(QScriptObject object, const char* name)
     return -1;
 }
 
+
 void CQScript::SetObjectValue(QScriptObject object, int index, QValue val)
 {
     QObject* obj = (QObject*)object;
     obj->vars[index] = val;
+}
+
+int Qlog2(int val)
+{
+    if (val <= 0)
+        return 0;
+    int answer = 1;
+    val -= 1;
+    while (val >>= 1)
+        answer++;
+    return answer;
+}
+
+void CQScript::SetObjectString(QScriptObject object, int index, const char* str)
+{
+    QObject* obj = (QObject*)object;
+    int obj_str_size = mallocsize(obj->vars[index].value_modifiable_string);
+    int set_str_size = strlen(str);
+    if (obj_str_size < set_str_size)
+    {
+        char* old_str = obj->vars[index].value_modifiable_string;
+        obj->vars[index].value_modifiable_string = (char*)malloc(1<<Qlog2(set_str_size));
+        strcpy(obj->vars[index].value_modifiable_string, str);
+        free(old_str);
+    }
+    else
+        strcpy(obj->vars[index].value_modifiable_string, str);
 }
 
 QValue CQScript::GetObjectValue(QScriptObject object, int index)
@@ -417,7 +474,7 @@ QValue CQScript::GetArgValue(QScriptArgs args, int index)
 QType CQScript::GetObjectValueType(QScriptObject object, int index)
 {
     QObject* obj = (QObject*)object;
-    return obj->cls->vars_types[index];
+    return obj->cls->vars[index].type;
 }
 
 void CQScript::InitalizeObject(QScriptObject object)
@@ -425,7 +482,7 @@ void CQScript::InitalizeObject(QScriptObject object)
     QObject* obj = (QObject*)object;
     for (int i = 0; i < obj->cls->vars_count; i++)
     {
-        switch (obj->cls->vars_types[i])
+        switch (obj->cls->vars[i].type)
         {
         case QType_Int:
             obj->vars[i].value_int = 0;
@@ -437,7 +494,7 @@ void CQScript::InitalizeObject(QScriptObject object)
             obj->vars[i].value_bool = false;
             break;
         case QType_String:
-            obj->vars[i].value_modifiable_string = (char*)malloc(obj->cls->vars_sizes[i]*sizeof(char));
+            obj->vars[i].value_modifiable_string = (char*)malloc(obj->cls->vars[i].size*sizeof(char));
             obj->vars[i].value_modifiable_string[0] = '\x00';
             break;
         default:

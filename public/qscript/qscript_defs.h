@@ -22,7 +22,10 @@ enum QType
     QType_String,
     QType_Bool,
     QType_Object,
-    QType_Function
+    QType_Function,
+
+
+    MAXQTYPE
 };
 
 union QValue

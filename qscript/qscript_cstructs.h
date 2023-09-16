@@ -116,13 +116,19 @@ typedef struct
     };
 } QFunction;
 
+typedef struct
+{
+    enum QType type;
+    const char* name;
+    int size;
+    bool is_private;
+} QVar;
+
 typedef struct 
 {
     const char* name;
     int vars_count;
-    enum QType* vars_types;
-    const char** vars_names;
-    int* vars_sizes;
+    QVar* vars;
     int methods_count;
     QFunction* methods;
     int sigs_count;

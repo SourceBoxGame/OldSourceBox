@@ -117,9 +117,24 @@ void dumpstack(lua_State* L) {
     Warning("\n");
 }
 
+
+struct Lua_Class
+{
+    bool is_creating;
+    union {
+        QClass* cls;
+        QClassCreator* creator;
+    };
+};
+
+
+
+
 int Lua_QScript_Index(lua_State* L)
 {
-    QObject* obj = (QObject*)lua_touserdata(L, 1);
+    QObject* obj;
+    if (!(obj = (QObject*)luaL_checkudata(L, 1, "QSCRIPT_OBJECT")))
+        return 0;
     const char* name = lua_tostring(L, 2);
     int index = g_pQScript->GetObjectValueIndex((QScriptObject)obj, name);
     if (index == -1)
@@ -147,46 +162,131 @@ int Lua_QScript_Index(lua_State* L)
     
 }
 
+
+int Lua_QScript_New_Index(lua_State* L)
+{
+    QObject* obj;
+    if (!(obj = (QObject*)luaL_checkudata(L, 1, "QSCRIPT_OBJECT")))
+        return 0;
+    const char* name = lua_tostring(L, 2);
+    int index = g_pQScript->GetObjectValueIndex((QScriptObject)obj, name);
+    if (index == -1)
+        return 0;
+    QType type = g_pQScript->GetObjectValueType((QScriptObject)obj, index);
+    QValue val;
+    switch (type)
+    {
+    case QType_Int:
+        val.value_int = lua_tointeger(L, 3);
+        g_pQScript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    case QType_String:
+        g_pQScript->SetObjectString((QScriptObject)obj, index, lua_tostring(L,3));
+        return 0;
+    case QType_Float:
+        val.value_float = lua_tonumber(L, 3);
+        g_pQScript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    case QType_Bool:
+        val.value_bool = lua_toboolean(L, 3);
+        g_pQScript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    default:
+        return 0;
+    }
+}
 int Lua_QScript_Object(lua_State* L)
 {
-    QClass* cls = 0;
-    if (!lua_islightuserdata(L, 1))
-    {
-        if(!(cls = (QClass*)luaL_checkudata(L,1,"QSCRIPT_CLASS")))
-            return 0;
-    }
-    else
-        cls = (QClass*)lua_touserdata(L, 1);
+    Lua_Class* luaclass;
+    if(!(luaclass = (Lua_Class*)luaL_checkudata(L,1,"QSCRIPT_CLASS")))
+        return 0;
+    if (luaclass->is_creating)
+        return 0;
+    QClass* cls = luaclass->cls;
     QObject* obj = (QObject*)lua_newuserdata(L, sizeof(QObject)+cls->vars_count*sizeof(QValue));
     obj->cls = cls;
     g_pQScript->InitalizeObject((QScriptObject)obj);
     luaL_setmetatable(L, "QSCRIPT_OBJECT");
     return 1;
 }
-/*
-MyEnt = class(sourcebox_server.ents.CBaseEntity)
-MyEnt.classname = "your_mom"
-...
-sourcebox_server.RegisterEntity(MyEnt)
 
-
-*/
 
 int Lua_QScript_Class(lua_State* L)
 {
+    Lua_Class* parentluaclass;
     QClass* cls = 0;
-    if (lua_gettop(L) != 0)
+    if (lua_gettop(L) == 0)
+        return 0; // TODO : error here
+    if (lua_gettop(L) > 1)
     {
-        if (!lua_islightuserdata(L, 1))
-        {
-            if (!(cls = (QClass*)luaL_checkudata(L, 1, "QSCRIPT_CLASS")))
-                return 0;
-        }
-        else
-            cls = (QClass*)lua_touserdata(L, 1);
+        if (!(parentluaclass = (Lua_Class*)luaL_checkudata(L, 2, "QSCRIPT_CLASS")))
+            return 0; // TODO : error here
+        if (parentluaclass->is_creating)
+            return 0;
+        cls = parentluaclass->cls;
     }
-    QClass* child = new QClass();
-    child->
+    Lua_Class* luaclass = (Lua_Class*)lua_newuserdata(L, sizeof(Lua_Class));
+    luaclass->creator = new QClassCreator();
+    luaclass->is_creating = true;
+    QClassCreator* child = luaclass->creator;
+    child->parent = cls;
+    child->name = lua_tolstring(L, 1, 0);
+    luaL_setmetatable(L, "QSCRIPT_CLASS_CREATOR");
+    return 1;
+}
+
+int Lua_QScript_Class_Creator_NewIndex(lua_State* L)
+{
+    Lua_Class* luaclass;
+    if (!(luaclass = (Lua_Class*)luaL_checkudata(L, 1, "QSCRIPT_CLASS_CREATOR")))
+        return 0; // TODO : error here
+    if (!luaclass->is_creating)
+        return 0; // TODO : error here
+    QClassCreator* cls = luaclass->creator;
+    if (lua_isfunction(L, 3))
+    {
+        QClassCreatorMethod* meth = (QClassCreatorMethod*)lua_newuserdata(L, sizeof(QClassCreatorMethod));
+        lua_pushvalue(L, 2);
+        QCallback* callback = new QCallback();
+        callback->callback = (void*)luaL_ref(L, LUA_REGISTRYINDEX);
+        callback->lang = current_interface;
+        callback->env = L;
+        meth->scripting_func = callback;
+        meth->name = lua_tostring(L, 2);
+        meth->is_private = false;
+        cls->methods.AddToTail(meth);
+        lua_pop(L, 1);
+        return 0;
+    }
+    else
+    {
+        int type = lua_tointeger(L, 3);
+        if (type < 0 || type >= MAXQTYPE)
+            return 0; // TODO : error here
+        QVar* var = new QVar();
+        var->is_private = false;
+        const char* name = lua_tostring(L, 2);
+        var->name = new char[strlen(name)];
+        strcpy(const_cast<char*>(var->name), name);
+        var->type = static_cast<QType>(type);
+        var->size = 64;
+        cls->vars.AddToTail(var);
+        return 0;
+    }
+}
+
+int Lua_QScript_Finish(lua_State* L)
+{
+    Lua_Class* luaclass;
+    if (!(luaclass = (Lua_Class*)luaL_checkudata(L, 1, "QSCRIPT_CLASS_CREATOR")))
+        return 0; // TODO : error here
+    if (!luaclass->is_creating)
+        return 0; // TODO : error here
+    QClassCreator* cls = luaclass->creator;
+    luaclass->is_creating = false;
+    luaclass->cls = (QClass*)g_pQScript->FinishClass((QScriptClassCreator)cls);
+    luaL_setmetatable(L, "QSCRIPT_CLASS");
+    return 0;
 }
 
 void CLuaInterface::ExecuteLua(const char* code, int size)
@@ -197,9 +297,23 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
     lua_pushstring(L, "__index");
     lua_pushcclosure(L, Lua_QScript_Index, 0);
     lua_settable(L, -3);
+    lua_pushstring(L, "__newindex");
+    lua_pushcclosure(L, Lua_QScript_New_Index, 0);
+    lua_settable(L, -3);
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "QSCRIPT_CLASS");
+    lua_pop(L, 1);
+    luaL_newmetatable(L, "QSCRIPT_CLASS_CREATOR");
+    lua_pushstring(L, "__newindex");
+    lua_pushcclosure(L, Lua_QScript_Class_Creator_NewIndex, 0);
+    lua_settable(L, -3);
     lua_pop(L, 1);
     lua_pushcclosure(L, Lua_QScript_Object, 0);
     lua_setglobal(L, "object");
+    lua_pushcclosure(L, Lua_QScript_Class, 0);
+    lua_setglobal(L, "class");
+    lua_pushcclosure(L, Lua_QScript_Finish, 0);
+    lua_setglobal(L, "finish");
     for (int i = 0; i < m_modules->Count(); i++)
     {
         QModule* mod = m_modules->Element(i);
@@ -212,7 +326,10 @@ void CLuaInterface::ExecuteLua(const char* code, int size)
             for (int j = 0; j < mod->classes->Count(); j++)
             {
                 QClass* cls = mod->classes->Element(j);
-                lua_pushlightuserdata(L, cls);
+                Lua_Class* luaclass = (Lua_Class*)lua_newuserdata(L, sizeof(Lua_Class));
+                luaclass->cls = cls;
+                luaclass->is_creating = false;
+                luaL_setmetatable(L, "QSCRIPT_CLASS");
                 lua_setfield(L, -2, cls->name);
             }
             lua_pushvalue(L, -1);

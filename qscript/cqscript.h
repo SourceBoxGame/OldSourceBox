@@ -24,13 +24,15 @@ public:
 	virtual void LoadMods(const char* filename);
 	virtual void LoadModsInDirectory(const char* folder, const char* filename);
 	virtual QScriptClassCreator StartClass(const char* name, QScriptClass parent = 0);
-	virtual void AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func);
-	virtual void AddVariable(QScriptClassCreator creator, const char* name, QType type);
-	virtual void AddString(QScriptClassCreator creator, const char* name, int size);
+	virtual void AddMethod(QScriptClassCreator creator, const char* name, QType* params, QCFunc func, bool is_private = false);
+	virtual void AddScriptingMethod(QScriptClassCreator creator, const char* name, QScriptCallback callback, bool is_private = false);
+	virtual void AddVariable(QScriptClassCreator creator, const char* name, QType type, bool is_private = false);
+	virtual void AddString(QScriptClassCreator creator, const char* name, int size, bool is_private = false);
 	virtual QScriptClass FinishClass(QScriptClassCreator creator);
 	virtual QScriptObject CreateObject(QScriptClass cls);
 	virtual int GetObjectValueIndex(QScriptObject object, const char* name);
 	virtual void SetObjectValue(QScriptObject object, int index, QValue val);
+	virtual void SetObjectString(QScriptObject object, int index, const char* str);
 	virtual QValue GetObjectValue(QScriptObject object, int index);
 	virtual QType GetObjectValueType(QScriptObject object, int index);
 	virtual int GetObjectMethodIndex(QScriptObject object, const char* name);
