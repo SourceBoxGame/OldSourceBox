@@ -13,15 +13,18 @@ QReturn QScriptClientMsg(QScriptArgs args)
 	//Msg("%s\n", qscript->GetArgString(args, 0));
 	//return qscript->RetNone();
 }
-/*
-QScriptReturn RegisterCmd(QScriptArgs args)
+
+QReturn RegisterCmd(QScriptArgs args)
 {
-	new ConCommandQScript(qscript->GetArgPermaString(args, 0), qscript->GetArgCallback(args, 1));
-	return qscript->RetNone();
+	new ConCommandQScript(qscript->GetArgValue(args, 0).value_string, qscript->GetArgValue(args, 1).value_function);
+	QReturn ret;
+	ret.type = QType_None;
+	return ret;
 }
-*/
+
 static QModuleDefFunc sourcebox_client[] = {
 	{QScriptClientMsg,"Msg",QType_None,"s"},
+	{RegisterCmd,"RegisterCmd",QType_None,"sp"},
 	{0,0,QType_None,0}
 	//{RegisterCmd,"RegisterCmd",QType_None,"sp"},
 };

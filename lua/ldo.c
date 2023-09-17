@@ -553,7 +553,7 @@ static int LuaActualCallback(lua_State* L, QFunction* function)
             else
                 goto failure;
             break;
-        /*case QType_Function:
+        case QType_Function:
             if (lua_isfunction(L, i + 1))
             {
                 QCallback* callback = (QCallback*)malloc(sizeof(QCallback));
@@ -561,11 +561,15 @@ static int LuaActualCallback(lua_State* L, QFunction* function)
                 callback->callback = luaL_ref(L, LUA_REGISTRYINDEX);
                 callback->lang = current_interface;
                 callback->env = L;
-                qargs->args[i].val = callback;
+                QFunction* func = (QFunction*)malloc(sizeof(QFunction));
+                func->always_zero = 0;
+                func->func_scripting = callback;
+                func->type = QFunction_Scripting;
+                val.value_function = func;
             }
             else
                 goto failure;
-            break;*/
+            break;
         default:
             goto failure;
             break;

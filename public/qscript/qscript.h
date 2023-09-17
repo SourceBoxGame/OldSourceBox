@@ -40,6 +40,7 @@ public:
     virtual QValue GetArgValue(QScriptArgs args, int index) = 0;
     virtual QType GetArgType(QScriptArgs args, int index) = 0;
     virtual void InitalizeObject(QScriptObject object) = 0;
+    virtual void CallFunction(QScriptFunction function, const char* fmt, ...) = 0;
 };
 
 

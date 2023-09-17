@@ -217,9 +217,9 @@ int Lua_QScript_Class(lua_State* L)
     QClass* cls = 0;
     if (lua_gettop(L) == 0)
         return 0; // TODO : error here
-    if (lua_gettop(L) > 1)
+    if (lua_gettop(L) > 0)
     {
-        if (!(parentluaclass = (Lua_Class*)luaL_checkudata(L, 2, "QSCRIPT_CLASS")))
+        if (!(parentluaclass = (Lua_Class*)luaL_checkudata(L, 1, "QSCRIPT_CLASS")))
             return 0; // TODO : error here
         if (parentluaclass->is_creating)
             return 0;
@@ -230,7 +230,8 @@ int Lua_QScript_Class(lua_State* L)
     luaclass->is_creating = true;
     QClassCreator* child = luaclass->creator;
     child->parent = cls;
-    child->name = lua_tolstring(L, 1, 0);
+    //child->name = lua_tolstring(L, 1, 0);
+    child->name = 0;
     luaL_setmetatable(L, "QSCRIPT_CLASS_CREATOR");
     return 1;
 }
@@ -260,16 +261,38 @@ int Lua_QScript_Class_Creator_NewIndex(lua_State* L)
     }
     else
     {
-        int type = lua_tointeger(L, 3);
-        if (type < 0 || type >= MAXQTYPE)
-            return 0; // TODO : error here
         QVar* var = new QVar();
         var->is_private = false;
         const char* name = lua_tostring(L, 2);
         var->name = new char[strlen(name)];
         strcpy(const_cast<char*>(var->name), name);
-        var->type = static_cast<QType>(type);
-        var->size = 64;
+        if (lua_isstring(L, -1))
+        {
+            var->type = QType_String;
+            const char* str = lua_tolstring(L, 3, 0);
+            var->size = 1<<Qlog2(strlen(str));
+            var->defaultval.value_modifiable_string = (char*)malloc(var->size);
+            strcpy(var->defaultval.value_modifiable_string, str);
+        }
+        else if (lua_isinteger(L, -1))
+        {
+            var->type = QType_Int;
+            var->defaultval.value_int = lua_tointeger(L, 3);
+        }
+        else if (lua_isnumber(L, -1))
+        {
+            var->type = QType_Float;
+            var->defaultval.value_float = lua_tonumber(L, 3);
+        }
+        else if (lua_isboolean(L, -1))
+        {
+            var->type = QType_Bool;
+            var->defaultval.value_bool = (bool)lua_toboolean(L, 3);
+        }
+        else
+        {
+            var->type = QType_None;
+        }
         cls->vars.AddToTail(var);
         return 0;
     }
@@ -365,16 +388,16 @@ QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
         QArg arg = args->args[i];  //ahoy its me mr krabs arg arg arg arg arg arg arg arg
         switch (arg.type)
         {
-        case 'i':
+        case QType_Int:
             lua_pushinteger(L, arg.val.value_int);
             break;
-        case 's':
+        case QType_String:
             lua_pushstring(L, arg.val.value_string);
             break;
-        case 'f':
+        case QType_Float:
             lua_pushnumber(L, arg.val.value_float);
             break;
-        case 'b':
+        case QType_Bool:
             lua_pushboolean(L, arg.val.value_bool);
             break;
         default:

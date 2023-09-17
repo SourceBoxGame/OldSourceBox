@@ -55,12 +55,13 @@ bool CQScript::Connect(CreateInterfaceFn factory)
     strtotype['f'] = QType_Float;
     strtotype['o'] = QType_Object;
     strtotype['b'] = QType_Bool;
+    strtotype['p'] = QType_Function;
     m_interfaces = new CUtlVector<IBaseScriptingInterface*>();
     m_modules = new CUtlVector<QModule*>();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
-    AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
-    AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
+    //AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
+    //AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
     return true;
 }
 
@@ -393,16 +394,6 @@ void CQScript::SetObjectValue(QScriptObject object, int index, QValue val)
     obj->vars[index] = val;
 }
 
-int Qlog2(int val)
-{
-    if (val <= 0)
-        return 0;
-    int answer = 1;
-    val -= 1;
-    while (val >>= 1)
-        answer++;
-    return answer;
-}
 
 void CQScript::SetObjectString(QScriptObject object, int index, const char* str)
 {
@@ -414,7 +405,7 @@ void CQScript::SetObjectString(QScriptObject object, int index, const char* str)
         char* old_str = obj->vars[index].value_modifiable_string;
         obj->vars[index].value_modifiable_string = (char*)malloc(1<<Qlog2(set_str_size));
         strcpy(obj->vars[index].value_modifiable_string, str);
-        free(old_str);
+        delete old_str;
     }
     else
         strcpy(obj->vars[index].value_modifiable_string, str);
@@ -485,20 +476,85 @@ void CQScript::InitalizeObject(QScriptObject object)
         switch (obj->cls->vars[i].type)
         {
         case QType_Int:
-            obj->vars[i].value_int = 0;
-            break;
         case QType_Float:
-            obj->vars[i].value_float = 0.0;
-            break;
         case QType_Bool:
-            obj->vars[i].value_bool = false;
+            obj->vars[i] = obj->cls->vars[i].defaultval;
             break;
         case QType_String:
             obj->vars[i].value_modifiable_string = (char*)malloc(obj->cls->vars[i].size*sizeof(char));
-            obj->vars[i].value_modifiable_string[0] = '\x00';
+            strcpy(obj->vars[i].value_modifiable_string, obj->cls->vars[i].defaultval.value_modifiable_string);
             break;
         default:
             break;
         }
+    }
+}
+
+void CQScript::CallFunction(QScriptFunction function, const char* fmt, ...)
+{
+    va_list va;
+    va_start(va, fmt);
+    int len = strlen(fmt);
+    QArgs* args = (QArgs*)malloc(sizeof(QArgs) + len * sizeof(QArg));
+    args->count = len;
+    for (int i = 0; i < len; i++)
+    {
+        QValue val;
+        switch (fmt[i])
+        {
+        case 's':
+            val.value_string = va_arg(va, const char*);
+            args->args[i].val = val;
+            args->args[i].type = QType_String;
+            break;
+        case 'f':
+            val.value_float = va_arg(va, float);
+            args->args[i].val = val;
+            args->args[i].type = QType_Float;
+            break;
+        case 'i':
+            val.value_int = va_arg(va, int);
+            args->args[i].val = val;
+            args->args[i].type = QType_Int;
+            break;
+        case 'b':
+            val.value_bool = va_arg(va, bool);
+            args->args[i].val = val;
+            args->args[i].type = QType_Bool;
+            break;
+        case 'o':
+            val.value_object = va_arg(va, QScriptObject);
+            args->args[i].val = val;
+            args->args[i].type = QType_Object;
+            break;
+        default:
+            Warning("Tried to create invalid arg type '%c' at %i.\n", fmt[i], i);
+            free(args);
+            return;
+        }
+    }
+    CallFunctionEx(function, args);
+    free(args);
+    return;
+}
+
+void CQScript::CallFunctionEx(QScriptFunction function, QArgs* args)
+{
+    QFunction* func = (QFunction*)function;
+    if (func->always_zero)
+        return;
+    switch (func->type)
+    {
+    case QFunction_Module:
+        func->func_module->func((QScriptArgs)args);
+        break;
+    case QFunction_Native:
+        func->func_native((QScriptArgs)args);
+        break;
+    case QFunction_Scripting:
+        ((IBaseScriptingInterface*)func->func_scripting->lang)->CallCallback(func->func_scripting, args);
+        break;
+    case QFunction_Void:
+        break;
     }
 }

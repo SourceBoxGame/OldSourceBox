@@ -35,4 +35,16 @@ struct QClassCreator
     CUtlVector<QVar*> vars;
 };
 
+
+int Qlog2(int val)
+{
+    if (val <= 0)
+        return 0;
+    int answer = 1;
+    val -= 1;
+    while (val >>= 1)
+        answer++;
+    return answer;
+}
+
 #endif

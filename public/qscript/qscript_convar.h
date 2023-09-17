@@ -13,13 +13,13 @@ class ConCommandQScript : public ConCommand
 public:
 	typedef ConCommand BaseClass;
 
-	ConCommandQScript(const char* pName, QScriptCallback callback);
+	ConCommandQScript(const char* pName, QScriptFunction callback);
 
 	// Invoke the function
 	virtual void Dispatch(const CCommand& command);
 
 private:
-	QScriptCallback m_callback;
+	QScriptFunction m_callback;
 };
 
 #endif

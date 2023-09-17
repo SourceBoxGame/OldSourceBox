@@ -17,6 +17,12 @@ typedef struct {
 typedef struct {
 	int unused;
 }* QScriptReturn;
+typedef struct {
+    int unused;
+}*QScriptFunction;
+typedef struct {
+    int unused;
+}*QScriptObject;
 typedef struct QReturn QReturn;
 typedef QReturn(*QCFunc)(QScriptArgs);
 enum QType
@@ -37,6 +43,8 @@ typedef union QValue
     const char* value_string;
     char* value_modifiable_string;
     bool value_bool;
+    QScriptFunction value_function;
+    QScriptObject value_object;
 };
 
 struct QReturn
@@ -122,6 +130,7 @@ typedef struct
     const char* name;
     int size;
     bool is_private;
+    union QValue defaultval;
 } QVar;
 
 typedef struct 

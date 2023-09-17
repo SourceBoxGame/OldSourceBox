@@ -40,6 +40,8 @@ public:
 	virtual QValue GetArgValue(QScriptArgs args, int index);
 	virtual QType GetArgType(QScriptArgs args, int index);
 	virtual void InitalizeObject(QScriptObject object);
+	virtual void CallFunction(QScriptFunction function, const char* fmt, ...);
+	virtual void CallFunctionEx(QScriptFunction function, QArgs* args);
 private:
 	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
