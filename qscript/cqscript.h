@@ -36,6 +36,7 @@ public:
 	virtual QValue GetObjectValue(QScriptObject object, int index);
 	virtual QType GetObjectValueType(QScriptObject object, int index);
 	virtual int GetObjectMethodIndex(QScriptObject object, const char* name);
+	virtual QScriptFunction GetObjectMethod(QScriptObject object, int index);
 	virtual QReturn CallObjectMethod(QScriptObject object, int index, QScriptArgs arguments);
 	virtual QValue GetArgValue(QScriptArgs args, int index);
 	virtual QType GetArgType(QScriptArgs args, int index);

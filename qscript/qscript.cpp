@@ -297,18 +297,27 @@ QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
         memcpy(cl->vars, cr->parent->vars, cr->parent->vars_count * sizeof(QVar));
     }
     QInterface* in = new QInterface();
-    in->args = (QParams*)malloc(cr->methods.Count() * sizeof(QParams*));
-    in->names = (const char**)malloc(cr->methods.Count() * sizeof(const char*));
-    for (int i = 0; i != cr->methods.Count(); i++)
+    in->count = cr->methods.Count();
+    if (in->count)
     {
-        QClassCreatorMethod* meth = cr->methods[i];
-        if (meth->params)
+        in->args = (QParams*)malloc(cr->methods.Count() * sizeof(QParams*));
+        in->names = (const char**)malloc(cr->methods.Count() * sizeof(const char*));
+        for (int i = 0; i != cr->methods.Count(); i++)
         {
-            in->args[i].count = meth->params_count;
-            in->args[i].types = new QType[in->args[i].count];
-            memcpy(in->args[i].types, meth->params, in->args[i].count * sizeof(QType));
+            QClassCreatorMethod* meth = cr->methods[i];
+            if (meth->params)
+            {
+                in->args[i].count = meth->params_count;
+                in->args[i].types = new QType[in->args[i].count];
+                memcpy(in->args[i].types, meth->params, in->args[i].count * sizeof(QType));
+            }
+            else
+            {
+                in->args[i].count = 0;
+                in->args[i].types = 0;
+            }
+            in->names[i] = meth->name;
         }
-        in->names[i] = meth->name;
     }
     if (cr->parent)
     {
@@ -361,6 +370,7 @@ QScriptClass CQScript::FinishClass(QScriptClassCreator creator)
         }
     }
     cl->name = cr->name;
+    delete cr;
     return (QScriptClass)cl;
 }
 
@@ -417,9 +427,16 @@ QValue CQScript::GetObjectValue(QScriptObject object, int index)
     return obj->vars[index];
 }
 
+QScriptFunction CQScript::GetObjectMethod(QScriptObject object, int index)
+{
+    QObject* obj = (QObject*)object;
+    return (QScriptFunction)(&(obj->cls->methods[index]));
+}
+
 int CQScript::GetObjectMethodIndex(QScriptObject object, const char* name)
 {
     QObject* obj = (QObject*)object;
+    int index = 0;
     for (int i = 0; i < obj->cls->sigs_count; i++)
     {
         QInterface* sig = obj->cls->sigs[i];
@@ -427,8 +444,9 @@ int CQScript::GetObjectMethodIndex(QScriptObject object, const char* name)
         {
             if (strcmp(sig->names[j], name) == 0)
             {
-                return i + j;
+                return index;
             }
+            index++;
         }
     }
     return -1;

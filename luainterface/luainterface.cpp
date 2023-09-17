@@ -138,7 +138,26 @@ int Lua_QScript_Index(lua_State* L)
     const char* name = lua_tostring(L, 2);
     int index = g_pQScript->GetObjectValueIndex((QScriptObject)obj, name);
     if (index == -1)
-        return 0;
+    {
+        index = g_pQScript->GetObjectMethodIndex((QScriptObject)obj, name);
+        if (index == -1)
+            return 0;
+        QFunction* func = (QFunction*)g_pQScript->GetObjectMethod((QScriptObject)obj, index);
+        switch (func->type)
+        {
+        case QFunction_Module:
+            lua_pushcclosure(L, (lua_CFunction)func, 0);
+            return 1;
+        case QFunction_Native:
+            lua_pushcclosure(L, (lua_CFunction)func,0);
+            return 1;
+        case QFunction_Scripting:
+            lua_rawgeti(L, LUA_REGISTRYINDEX, (int)func->func_scripting->callback);
+            return 1;
+        default:
+            return 0;
+        }
+    }
     QValue val = g_pQScript->GetObjectValue((QScriptObject)obj, index);
     QType type = g_pQScript->GetObjectValueType((QScriptObject)obj, index);
     switch (type)
@@ -247,14 +266,20 @@ int Lua_QScript_Class_Creator_NewIndex(lua_State* L)
     if (lua_isfunction(L, 3))
     {
         QClassCreatorMethod* meth = (QClassCreatorMethod*)lua_newuserdata(L, sizeof(QClassCreatorMethod));
-        lua_pushvalue(L, 2);
+        lua_pushvalue(L, 3);
         QCallback* callback = new QCallback();
         callback->callback = (void*)luaL_ref(L, LUA_REGISTRYINDEX);
         callback->lang = current_interface;
         callback->env = L;
+        callback->object = 0;
         meth->scripting_func = callback;
-        meth->name = lua_tostring(L, 2);
+        meth->is_scripting = true;
+        const char* name = lua_tostring(L, 2);
+        meth->name = new char[strlen(name)+1];
+        strcpy(const_cast<char*>(meth->name), name);
         meth->is_private = false;
+        meth->params = 0;
+        meth->params_count = 0;
         cls->methods.AddToTail(meth);
         lua_pop(L, 1);
         return 0;
@@ -264,14 +289,14 @@ int Lua_QScript_Class_Creator_NewIndex(lua_State* L)
         QVar* var = new QVar();
         var->is_private = false;
         const char* name = lua_tostring(L, 2);
-        var->name = new char[strlen(name)];
+        var->name = new char[strlen(name)+1];
         strcpy(const_cast<char*>(var->name), name);
         if (lua_isstring(L, -1))
         {
             var->type = QType_String;
             const char* str = lua_tolstring(L, 3, 0);
             var->size = 1<<Qlog2(strlen(str));
-            var->defaultval.value_modifiable_string = (char*)malloc(var->size);
+            var->defaultval.value_modifiable_string = (char*)malloc(var->size+1);
             strcpy(var->defaultval.value_modifiable_string, str);
         }
         else if (lua_isinteger(L, -1))
