@@ -1,4 +1,3 @@
-#define PY_SSIZE_T_CLEAN
 #include "cqscript.h"
 #include "filesystem.h"
 #include "utlstring.h"
@@ -58,6 +57,7 @@ bool CQScript::Connect(CreateInterfaceFn factory)
     strtotype['p'] = QType_Function;
     m_interfaces = new CUtlVector<IBaseScriptingInterface*>();
     m_modules = new CUtlVector<QModule*>();
+    m_mods = new CUtlStringMap<QMod*>();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
     //AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
@@ -132,7 +132,7 @@ QScriptModule CQScript::CreateModule(const char* name, QModuleDefFunc* funcs)
 }
 
 
-void CQScript::LoadFilesInDirectory(const char* folder, const char* filename)
+void CQScript::LoadFilesInDirectory(const char* modname, const char* folder, const char* filename)
 {
     FileFindHandle_t findHandle;
     char searchPath[MAX_PATH];
@@ -161,9 +161,17 @@ void CQScript::LoadFilesInDirectory(const char* folder, const char* filename)
             strncat(pFilePath, folder, MAX_PATH);
             V_AppendSlash(pFilePath, MAX_PATH);
             strncat(pFilePath, pszFileName, MAX_PATH);
+            QMod* mod = GetOrCreateMod(modname);
+            mod->name = modname;
+            char pScriptPath[MAX_PATH];
+            strncpy(pScriptPath, folder, MAX_PATH);
+            V_AppendSlash(pScriptPath, MAX_PATH);
+            strncat(pScriptPath, pszFileName, MAX_PATH);
             for (int i = 0; i != m_interfaces->Count(); i++)
             {
-                m_interfaces->Element(i)->LoadMod(pFilePath);
+                QInstance* ins = m_interfaces->Element(i)->LoadMod(mod, pFilePath);
+                if (ins)
+                    mod->instances[pScriptPath] = ins;
             }
         }
         pszFileName = g_pFullFileSystem->FindNext(findHandle);
@@ -184,7 +192,7 @@ void CQScript::LoadMods(const char* filename)
         }
         if (g_pFullFileSystem->FindIsDirectory(findHandle))
         {
-            LoadFilesInDirectory(pszFileName, filename);
+            LoadFilesInDirectory(pszFileName,pszFileName, filename);
             pszFileName = g_pFullFileSystem->FindNext(findHandle);
             continue;
         }
@@ -212,7 +220,7 @@ void CQScript::LoadModsInDirectory(const char* folder, const char* filename)
             if (g_pFullFileSystem->IsDirectory(path))
             {
                 snprintf(path, MAX_PATH, "%s/%s", pszFileName, folder);
-                LoadFilesInDirectory(path, filename);
+                LoadFilesInDirectory(pszFileName,path, filename);
             }
             pszFileName = g_pFullFileSystem->FindNext(findHandle);
             continue;
@@ -221,7 +229,17 @@ void CQScript::LoadModsInDirectory(const char* folder, const char* filename)
     }
 }
 
-
+QMod* CQScript::GetOrCreateMod(const char* name)
+{
+    if (m_mods->Defined(name))
+        return (*m_mods)[name];
+    else
+    {
+        QMod* mod = new QMod();
+        (*m_mods)[name] = mod;
+        return mod;
+    }
+}
 
 QScriptClassCreator CQScript::StartClass(const char* name, QScriptClass parent)
 {

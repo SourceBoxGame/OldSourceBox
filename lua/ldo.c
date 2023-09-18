@@ -32,7 +32,6 @@
 #include "lundump.h"
 #include "lvm.h"
 #include "lzio.h"
-#include "qscript_cstructs.h"
 #include "lauxlib.h"
 
 
@@ -511,7 +510,7 @@ l_sinline CallInfo *prepCallInfo (lua_State *L, StkId func, int nret,
 }
 
 extern void* current_interface;
-static int LuaActualCallback(lua_State* L, QFunction* function)
+int LuaActualCallback(lua_State* L, QFunction* function)
 {
     if (function->always_zero)
     {

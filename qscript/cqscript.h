@@ -7,6 +7,7 @@
 #include "qscript.h"
 #include "qscript_language.h"
 #include "qscript_structs.h"
+#include "UtlStringMap.h"
 
 
 
@@ -44,11 +45,13 @@ public:
 	virtual void CallFunction(QScriptFunction function, const char* fmt, ...);
 	virtual void CallFunctionEx(QScriptFunction function, QArgs* args);
 private:
-	virtual void LoadFilesInDirectory(const char* folder, const char* filename);
+	virtual void LoadFilesInDirectory(const char* modname,const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);
+	QMod* GetOrCreateMod(const char* name);
 
 	CUtlVector<QModule*>* m_modules;
 	CUtlVector<IBaseScriptingInterface*>* m_interfaces;
+	CUtlStringMap<QMod*>* m_mods;
 	
 };
 

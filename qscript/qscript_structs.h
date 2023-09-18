@@ -4,7 +4,9 @@
 #pragma once
 #endif
 #include "utlvector.h"
+#include "UtlStringMap.h"
 #include "qscript_cstructs.h"
+#include "qscript/qscript.h"
 
 struct QModule
 {
@@ -35,6 +37,39 @@ struct QClassCreator
     CUtlVector<QVar*> vars;
 };
 
+enum QExport_Type
+{
+    QExport_Object,
+    QExport_Class,
+    QExport_Function
+};
+
+struct QExport
+{
+    const char* name;
+    QExport_Type type;
+    union
+    {
+        QObject* obj;
+        QClass* cls;
+        QFunction* func;
+    };
+};
+
+struct QInstance
+{
+    CUtlVector<QExport*> exports;
+    void* lang;
+    void* env;
+};
+
+
+
+struct QMod
+{
+    const char* name;
+    CUtlStringMap<QInstance*> instances;
+};
 
 int Qlog2(int val)
 {
@@ -45,6 +80,26 @@ int Qlog2(int val)
     while (val >>= 1)
         answer++;
     return answer;
+}
+
+bool IsValidPath(const char* pszFilename)
+{
+    if (!pszFilename)
+    {
+        return false;
+    }
+
+    if (Q_strlen(pszFilename) <= 0 ||
+        Q_strstr(pszFilename, "\\\\") ||	// to protect network paths
+        Q_strstr(pszFilename, ":") || // to protect absolute paths
+        Q_strstr(pszFilename, "..") ||   // to protect relative paths
+        Q_strstr(pszFilename, "\n") ||   // CFileSystem_Stdio::FS_fopen doesn't allow this
+        Q_strstr(pszFilename, "\r"))    // CFileSystem_Stdio::FS_fopen doesn't allow this
+    {
+        return false;
+    }
+
+    return true;
 }
 
 #endif
