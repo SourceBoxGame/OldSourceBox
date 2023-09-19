@@ -35,7 +35,8 @@ enum SQMetaMethod{
     MT_TOSTRING=15,
     MT_NEWMEMBER=16,
     MT_INHERITED=17,
-    MT_LAST = 18
+    MT_FINISH=18,
+    MT_LAST=19
 };
 
 #define MM_ADD      _SC("_add")
@@ -56,6 +57,7 @@ enum SQMetaMethod{
 #define MM_TOSTRING _SC("_tostring")
 #define MM_NEWMEMBER _SC("_newmember")
 #define MM_INHERITED _SC("_inherited")
+#define MM_FINISH _SC("_finish")
 
 
 #define _CONSTRUCT_VECTOR(type,size,ptr) { \

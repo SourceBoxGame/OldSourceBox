@@ -828,12 +828,37 @@ bool SQVM::CLOSURE_OP(SQObjectPtr &target, SQFunctionProto *func)
 
 }
 
+bool SQVM::CLASS_OP_UDATA(SQObjectPtr& target, SQInteger baseclass, SQInteger attributes)
+{
+    SQObjectPtr attrs;
+    if (attributes != MAX_FUNC_STACKSIZE) {
+        attrs = _stack._vals[_stackbase + attributes];
+    }
+    SQObjectPtr udata = _stack._vals[_stackbase + baseclass];
+    SQObjectPtr mt_i;
+    if (!_userdata(udata)->GetMetaMethod(this, MT_INHERITED, mt_i)) // TODO : check if this will crash when _inherited isnt a method
+    {
+        Raise_Error(_SC("trying to inherit from a %s which does not have the _inherited metamethod. (cannot be inherited from)"), GetTypeName(_stack._vals[_stackbase + baseclass])); return false;
+    }
+    target = SQClass::Create(_ss(this), 0);
+    Push(udata); Push(target); Push(attrs);
+    SQObjectPtr ret;
+    if (!Call(mt_i, 3, _top - 3, ret, false))
+    {
+        Pop(3);
+        return false;
+    }
+    Pop(3);
+    _class(target)->_attributes = attrs;
+    return true;
+}
 
 bool SQVM::CLASS_OP(SQObjectPtr &target,SQInteger baseclass,SQInteger attributes)
 {
     SQClass *base = NULL;
     SQObjectPtr attrs;
     if(baseclass != -1) {
+        if (sq_type(_stack._vals[_stackbase + baseclass]) == OT_USERDATA) { return CLASS_OP_UDATA(target, baseclass, attributes); }
         if(sq_type(_stack._vals[_stackbase+baseclass]) != OT_CLASS) { Raise_Error(_SC("trying to inherit from a %s"),GetTypeName(_stack._vals[_stackbase+baseclass])); return false; }
         base = _class(_stack._vals[_stackbase + baseclass]);
     }
@@ -1366,40 +1391,45 @@ void SQVM::CallDebugHook(SQInteger type,SQInteger forcedline)
 }
 #include "../qscript/qscript_cstructs.h"
 extern void* current_interface;
-static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
+static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* function)
 {
-    if (func->native)
-        return ((SQFUNCTION)func->func)(SQ);
-    const char* argtypes = func->args;
-    if (strlen(argtypes) != sq_gettop(SQ)-1) // TODO : maybe error too
+    if (function->always_zero)
+        return ((SQFUNCTION)function)(SQ);
+    QModuleFunction* func = function->func_module;
+    QParams params = func->params;
+    if (params.count != sq_gettop(SQ)-1) // TODO : maybe error too
         return 0;
-    QArgs* qargs = (QArgs*)malloc(sizeof(QArgs));
-    qargs->types = argtypes;
-    qargs->count = sq_gettop(SQ) - 1;
-    qargs->args = (void**)malloc(qargs->count * sizeof(void*));
+    QArgs* qargs = (QArgs*)malloc(params.count * sizeof(QArg) + sizeof(QArgs));
+    qargs->count = params.count;
     for (int i = 0; i != qargs->count; i++)
     {
-        switch (argtypes[i])
+        qargs->args[i].type = params.types[i];
+        union QValue val;
+        switch (params.types[i])
         {
-        case 's':
+        case QType_String:
             if (sq_gettype(SQ, i + 2) == OT_STRING)
-                sq_getstring(SQ, i + 2, (const char**)(&qargs->args[i]));
+                sq_getstring(SQ, i + 2, &val.value_string);
             else
                 goto failure;
             break;
-        case 'i':
+        case QType_Int:
             if (sq_gettype(SQ, i + 2) == OT_INTEGER)
-                sq_getinteger(SQ, i + 2, reinterpret_cast<SQInteger*>(&qargs->args[i]));
+            {
+                SQInteger p;
+                sq_getinteger(SQ, i + 2, &p);
+                val.value_int = p;
+            }
             else
                 goto failure;
             break;
-        case 'f':
+        case QType_Float:
             if (sq_gettype(SQ, i + 2) == OT_FLOAT)
-                sq_getfloat(SQ, i + 2, (float*)(&qargs->args[i]));
+                sq_getfloat(SQ, i + 2, &val.value_float);
             else
                 goto failure;
             break;
-        case 'p':
+        case QType_Function:
             if (sq_gettype(SQ, i + 2) == OT_CLOSURE)
             {
                 QCallback* callback = (QCallback*)malloc(sizeof(QCallback));
@@ -1414,7 +1444,11 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
                 sq_resetobject((HSQOBJECT*)callback->object);
                 sq_getstackobj(SQ, -1, (HSQOBJECT*)callback->object);
                 sq_pop(SQ, -1);
-                qargs->args[i] = callback;
+                QFunction* func = (QFunction*)malloc(sizeof(QFunction));
+                func->always_zero = 0;
+                func->func_scripting = callback;
+                func->type = QFunction_Scripting;
+                val.value_function = (QScriptFunction)func;
             }
             else
                 goto failure;
@@ -1430,27 +1464,28 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* func)
             goto failure;
             break;
         }
+        qargs->args[i].val = val;
         continue;
     failure:
         free(qargs->args);
         free(qargs);
         return 0;
     }
-    QReturn* ret = (QReturn*)(func->func((QScriptArgs)qargs));
+    QReturn ret = func->func((QScriptArgs)qargs);
 
-    switch (ret->type)
+    switch (ret.type)
     {
     case QType_Int:
-        sq_pushinteger(SQ, (int)(ret->value));
+        sq_pushinteger(SQ, ret.value.value_int);
         return 1;
     case QType_Float:
-        sq_pushfloat(SQ, *(float*)(&ret->value));
+        sq_pushfloat(SQ, ret.value.value_float);
         return 1;
     case QType_String:
-        sq_pushstring(SQ, (const char*)(ret->value), -1);
+        sq_pushstring(SQ, ret.value.value_string, -1);
         return 1;
     case QType_Bool:
-        sq_pushbool(SQ, ret->value != 0);
+        sq_pushbool(SQ, ret.value.value_bool);
         return 1;
     default:
         return 0;

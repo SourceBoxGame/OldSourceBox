@@ -13,6 +13,38 @@ static const QReturn QNone = {
 IFileSystem* g_pFullFileSystem = 0;
 
 
+
+int Qlog2(int val)
+{
+    if (val <= 0)
+        return 0;
+    int answer = 1;
+    val -= 1;
+    while (val >>= 1)
+        answer++;
+    return answer;
+}
+
+bool IsValidPath(const char* pszFilename)
+{
+    if (!pszFilename)
+    {
+        return false;
+    }
+
+    if (Q_strlen(pszFilename) <= 0 ||
+        Q_strstr(pszFilename, "\\\\") ||	// to protect network paths
+        Q_strstr(pszFilename, ":") || // to protect absolute paths
+        Q_strstr(pszFilename, "..") ||   // to protect relative paths
+        Q_strstr(pszFilename, "\n") ||   // CFileSystem_Stdio::FS_fopen doesn't allow this
+        Q_strstr(pszFilename, "\r"))    // CFileSystem_Stdio::FS_fopen doesn't allow this
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // singleton accessor
 CQScript& QScript()
 {
@@ -60,7 +92,7 @@ bool CQScript::Connect(CreateInterfaceFn factory)
     m_mods = new CUtlStringMap<QMod*>();
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
-    //AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
+    AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
     //AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
     return true;
 }

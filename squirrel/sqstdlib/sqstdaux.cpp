@@ -136,18 +136,12 @@ void errfunctwo(HSQUIRRELVM v, const SQChar* sErr, const SQChar* sSource, SQInte
     //Msg("\n");
 }
 
+
 void sqstd_seterrorhandlers(HSQUIRRELVM v)
 {
-
-    QFunction* printerror_func = new QFunction(); 
-    printerror_func->name = "prf"; 
-    printerror_func->args = "s"; 
-    printerror_func->func = (QCFunc)_sqstd_aux_printerror; 
-    printerror_func->native = 1; 
-
     sq_setcompilererrorhandler(v,_sqstd_compiler_error);
-    sq_newclosure(v, (SQFUNCTION)printerror_func,0);
-    sq_seterrorhandlertwo(v, printerror_func);
+    sq_newclosure(v, _sqstd_aux_printerror,0);
+    sq_seterrorhandler(v);
 }
 
 SQRESULT sqstd_throwerrorf(HSQUIRRELVM v,const SQChar *err,...)

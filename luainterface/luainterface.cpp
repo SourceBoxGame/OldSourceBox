@@ -21,6 +21,7 @@ extern "C" {
 #include "ldo.h"
 }
 
+
 IFileSystem* g_pFullFileSystem = 0;
 IQScript* g_pQScript = 0;
 extern "C"
@@ -40,11 +41,42 @@ public:
     QInstance* ExecuteLua(QMod* mod, const char* code, int size);
 private:
     CUtlVector<QModule*>* m_modules;
-    CUtlStringMap<QMod*>* m_mods;
 };
 
 static CLuaInterface s_LuaInterface;
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CLuaInterface, IBaseScriptingInterface, QSCRIPT_LANGAUGE_INTERFACE_VERSION, s_LuaInterface);
+
+
+int Qlog2(int val)
+{
+    if (val <= 0)
+        return 0;
+    int answer = 1;
+    val -= 1;
+    while (val >>= 1)
+        answer++;
+    return answer;
+}
+
+bool IsValidPath(const char* pszFilename)
+{
+    if (!pszFilename)
+    {
+        return false;
+    }
+
+    if (Q_strlen(pszFilename) <= 0 ||
+        Q_strstr(pszFilename, "\\\\") ||	// to protect network paths
+        Q_strstr(pszFilename, ":") || // to protect absolute paths
+        Q_strstr(pszFilename, "..") ||   // to protect relative paths
+        Q_strstr(pszFilename, "\n") ||   // CFileSystem_Stdio::FS_fopen doesn't allow this
+        Q_strstr(pszFilename, "\r"))    // CFileSystem_Stdio::FS_fopen doesn't allow this
+    {
+        return false;
+    }
+
+    return true;
+}
 
 InitReturnVal_t CLuaInterface::Init()
 {
@@ -94,10 +126,7 @@ QInstance* CLuaInterface::LoadMod(QMod* mod, const char* path)
     codebuffer->Clear();
 
     if (g_pFullFileSystem->ReadFile(path, NULL, *codebuffer))
-    {
-        QInstance* ins = ExecuteLua(mod,(const char*)(codebuffer->Base()), codebuffer->PeekStringLength());
-        return ins;
-    }
+        return ExecuteLua(mod, (const char*)(codebuffer->Base()), codebuffer->PeekStringLength());
 }
 
 void dumpstack(lua_State* L) {
@@ -125,13 +154,6 @@ void dumpstack(lua_State* L) {
     Warning("\n");
 }
 
-enum Lua_UserdataType
-{
-    Lua_QObject,
-    Lua_QClass,
-    Lua_QClassCreator,
-    Lua_QFunction
-};
 
 struct Lua_Userdata
 {
@@ -213,7 +235,7 @@ int Lua_QScript_New_Index(lua_State* L)
         return 0;
     QType type = g_pQScript->GetObjectValueType((QScriptObject)obj, index);
     QValue val;
-    switch (type)
+    switch (type) // TODO : error check the type
     {
     case QType_Int:
         val.value_int = lua_tointeger(L, 3);

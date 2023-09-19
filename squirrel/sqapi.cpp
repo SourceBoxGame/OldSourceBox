@@ -100,7 +100,7 @@ void sq_seterrorhandler(HSQUIRRELVM v)
         v->Pop();
     }
 }
-
+/*
 void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err)
 {
     SQObject o = stack_get(v, -1);
@@ -110,7 +110,7 @@ void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err)
         v->Pop();
     }
 }
-
+*/
 void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc)
 {
 

@@ -35,9 +35,9 @@ public:
     virtual bool Connect(CreateInterfaceFn factory);
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
-    virtual void LoadMod(const char* path);
-    virtual void CallCallback(QCallback* callback, QArgs* args);
-    void ExecuteSquirrel(const char* code, int size);
+    virtual QInstance* LoadMod(QMod* mod, const char* path);
+    virtual QReturn CallCallback(QCallback* callback, QArgs* args);
+    QInstance* ExecuteSquirrel(QMod* mod, const char* code, int size);
 private:
     CUtlVector<QModule*>* m_modules;
 };
@@ -72,11 +72,11 @@ void CSquirrelInterface::Shutdown()
 }
 
 static CUtlBuffer* codebuffer = 0;
-void CSquirrelInterface::LoadMod(const char* path)
+QInstance* CSquirrelInterface::LoadMod(QMod* mod, const char* path)
 {
     int len = strlen(path);
     if (!(path[len - 4] == '.' && path[len - 3] == 'n' && path[len - 2] == 'u' && path[len - 1] == 't'))
-        return;
+        return 0;
 
     if (codebuffer == 0)
         codebuffer = new CUtlBuffer();
@@ -84,43 +84,43 @@ void CSquirrelInterface::LoadMod(const char* path)
     codebuffer->Clear();
 
     if (g_pFullFileSystem->ReadFile(path, NULL, *codebuffer))
-        ExecuteSquirrel((const char*)(codebuffer->Base()), codebuffer->PeekStringLength());
+        return ExecuteSquirrel(mod, (const char*)(codebuffer->Base()), codebuffer->PeekStringLength());
 }
 
 void dumpstack(HSQUIRRELVM SQ) {
     int top = sq_gettop(SQ);
     for (int i = 1; i <= top; i++) {
-        //Warning("%d\t%s\t", i, sq_gettype(SQ, i));
+        Warning("%d\t%x\t", i, sq_gettype(SQ, i));
         switch (sq_gettype(SQ, i)) {
         case OT_FLOAT:
             SQFloat f;
             sq_getfloat(SQ, i, &f);
-            //Warning("%f\n", f);
+            Warning("%f\n", f);
             break;
         case OT_STRING:
             const SQChar *str;
             SQInteger size;
             sq_getstringandsize(SQ, i, &str, &size);
-            //Warning("%s | size: %i\n", str, size);
+            Warning("%s | size: %i\n", str, size);
             break;
         case OT_BOOL:
             SQBool bl;
             sq_getbool(SQ, i, &bl);
-            //Warning("%s\n", (bl ? "true" : "false"));
+            Warning("%s\n", (bl ? "true" : "false"));
             break;
         case OT_NULL:
-            //Warning("%s\n", "null");
+            Warning("%s\n", "null");
             break;
         default:
             HSQOBJECT ptr;
             sq_getstackobj(SQ, i, &ptr);
-            //Warning("%p\n", ptr);
+            Warning("%p\n", ptr);
             break;
         }
     }
     Warning("\n");
 }
-
+/*
 QScriptReturn print(QScriptArgs args)
 {
     Msg("%s", ((const char**)(((QArgs*)args)->args))[0]); //hacky way to reconnect two commands do the same
@@ -149,9 +149,9 @@ void errfunc(HSQUIRRELVM SQ, const SQChar* str, ...)
     Msg("\n");
 
     //sqstd_printcallstack(SQ);
-    /*SQInteger level;
-    sq_getinteger(SQ, -1, &level);
-    write_callstack(SQ, level);*/
+    //SQInteger level;
+    //sq_getinteger(SQ, -1, &level);
+    //write_callstack(SQ, level);
 
     va_end(args);
 }
@@ -170,7 +170,6 @@ void emptyprintl(HSQUIRRELVM SQ, const SQChar* str, ...)
 {
     Msg("%s\n", str);
 }
-
 
 void base_commands(HSQUIRRELVM SQ)
 {
@@ -212,46 +211,271 @@ void base_commands(HSQUIRRELVM SQ)
     DECLARE_SQUIRREL_VARIABLE_STRING("\n", "_endl_", SQ)
 
 
-        //generic
-    
-    /*    1, _SC("seterrorhandler"), NULL, (QCFunc)base_seterrorhandler, 2
-    
-    { 1,_SC("setdebughook"),NULL,(QCFunc)base_setdebughook,2 },
-    { 1,_SC("enabledebuginfo"),NULL,(QCFunc)base_enabledebuginfo,2 },
-    { 1,_SC("getstackinfos"),".n",(QCFunc)base_getstackinfos,2 },
-    { 1,_SC("getroottable"),NULL,(QCFunc)base_getroottable,1 },
-    { 1,_SC("setroottable"),NULL,(QCFunc)base_setroottable,2 },
-    { 1,_SC("getconsttable"),NULL,(QCFunc)base_getconsttable,1 },
-    { 1,_SC("setconsttable"),NULL,(QCFunc)base_setconsttable,2 },
-    { 1,_SC("assert"),NULL,(QCFunc)base_assert,-2 },
-        //{1,_SC("print"),NULL,(QCFunc)base_print,2},
-    { 1,_SC("print"),NULL,(QCFunc)printf,2 },
-    { 1,_SC("error"),NULL,(QCFunc)base_error,2 },
-    { 1,_SC("compilestring"),".ss",(QCFunc)base_compilestring,-2 },
-    { 1,_SC("newthread"),".c",(QCFunc)base_newthread,2 },
-    { 1,_SC("suspend"),NULL,(QCFunc)base_suspend,-1 },
-    { 1,_SC("array"),".n",(QCFunc)base_array,-2 },
-    { 1,_SC("type"),NULL,(QCFunc)base_type,2 },
-    { 1,_SC("callee"),NULL,(QCFunc)base_callee,0 },
-    { 1,_SC("dummy"),NULL,(QCFunc)base_dummy,0 },
-#ifndef NO_GARBAGE_COLLECTOR
-    { 1,_SC("collectgarbage"),NULL,(QCFunc)base_collectgarbage,0 },
-    { 1,_SC("resurrectunreachable"),NULL,(QCFunc)base_resurectureachable,0 },
-#endif*/
+}
+*/
+struct SQ_Userdata
+{
+    union {
+        QObject* obj;
+        QClass* cls;
+        QFunction* func;
+    };
+};
+
+SQInteger Squirrel_Class_Call(HSQUIRRELVM v)
+{
+    SQ_Userdata* usr;
+    SQUserPointer tag;
+    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+        return 0; // TODO : error because bad udata
+    if (tag != "QSCRIPT_CLASS") // :letroll:
+        return 0;
+    QClass* cls = usr->cls;
+    QObject* obj = (QObject*)malloc(sizeof(QObject) + cls->vars_count * sizeof(QValue));
+    obj->cls = cls;
+    qscript->InitalizeObject((QScriptObject)obj);
+    ((SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata)))->obj = obj;
+    sq_settypetag(v, -1, "QSCRIPT_OBJECT");
+    sq_pushregistrytable(v);
+    sq_pushstring(v, "QSCRIPT_OBJECT",-1);
+    sq_get(v, -2);
+    sq_remove(v, -2);
+    sq_setdelegate(v, -2);
+    return 1;
+}
+SQInteger Squirrel_Class_Inherited(HSQUIRRELVM v)
+{
+    SQ_Userdata* usr;
+    SQUserPointer tag;
+    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+        return 0; // TODO : error because bad udata
+    if (tag != "QSCRIPT_CLASS") // :letroll:
+        return 0;
+    QClass* cls = usr->cls;
+    int index = 0;
+    for (int i = 0; i < cls->sigs_count; i++)
+    {
+        QInterface* sig = cls->sigs[i];
+        for (int j = 0; j < sig->count; j++)
+        {
+            QFunction* func = &cls->methods[index];
+            sq_pushstring(v, sig->names[i], -1);
+            switch (func->type)
+            {
+            case QFunction_Module:
+                sq_newclosure(v, (SQFUNCTION)func, 0);
+                break;
+            case QFunction_Native:
+                sq_newclosure(v, (SQFUNCTION)func, 0);
+                break;
+            case QFunction_Scripting:
+                sq_pushobject(v, *(HSQOBJECT*)func->func_scripting->callback); // TODO : make this push a QFunction
+                break;
+            default:
+                sq_pushnull(v);
+                break;
+            }
+            sq_newslot(v, 2, false);
+            index++;
+        }
+    }
+    for (int i = 0; i < cls->vars_count; i++)
+    {
+        QVar* var = &cls->vars[i];
+        QType type = var->type;
+        QValue val = var->defaultval;
+        sq_pushstring(v,var->name, -1);
+        switch (type)
+        {
+        case QType_Int:
+            sq_pushinteger(v, val.value_int);
+            break;
+        case QType_String:
+            sq_pushstring(v, val.value_string, -1);
+            break;
+        case QType_Float:
+            sq_pushfloat(v, val.value_float);
+            break;
+        case QType_Bool:
+            sq_pushbool(v, val.value_bool);
+            break;
+        default:
+            sq_pushnull(v);
+            break;
+        }
+        sq_newslot(v, 2, false);
+    }
+    return 0;
 }
 
+SQInteger Squirrel_Object_Get(HSQUIRRELVM v)
+{
+    SQ_Userdata* usr;
+    SQUserPointer tag;
+    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+        return 0; // TODO : error because bad udata
+    if (tag != "QSCRIPT_OBJECT") // :letroll:
+        return 0;
+    const char* name;
+    if (SQ_FAILED(sq_getstring(v, 2, &name)))
+        return 0;
+    QObject* obj = usr->obj;
+    
+    int index = qscript->GetObjectValueIndex((QScriptObject)obj, name);
+    if (index == -1)
+    {
+        index = qscript->GetObjectMethodIndex((QScriptObject)obj, name);
+        if (index == -1)
+            return 0;
+        QFunction* func = (QFunction*)qscript->GetObjectMethod((QScriptObject)obj, index);
+        switch (func->type)
+        {
+        case QFunction_Module:
+            sq_newclosure(v, (SQFUNCTION)func, 0);
+            return 1;
+        case QFunction_Native:
+            sq_newclosure(v, (SQFUNCTION)func, 0);
+            return 1;
+        case QFunction_Scripting:
+            sq_pushobject(v, *(HSQOBJECT*)func->func_scripting->callback); // TODO : make this push a QFunction
+            return 1;
+        default:
+            return 0;
+        }
+    }
+    QValue val = qscript->GetObjectValue((QScriptObject)obj, index);
+    QType type = qscript->GetObjectValueType((QScriptObject)obj, index);
+    switch (type)
+    {
+    case QType_Int:
+        sq_pushinteger(v, val.value_int);
+        return 1;
+    case QType_String:
+        sq_pushstring(v, val.value_string,-1);
+        return 1;
+    case QType_Float:
+        sq_pushfloat(v, val.value_float);
+        return 1;
+    case QType_Bool:
+        sq_pushbool(v, val.value_bool);
+        return 1;
+    default:
+        sq_pushnull(v);
+        return 1;
+    }
+}
 
-void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
+SQInteger Squirrel_Object_Set(HSQUIRRELVM v)
+{
+    SQ_Userdata* usr;
+    SQUserPointer tag;
+    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+        return 0; // TODO : error because bad udata
+    if (tag != "QSCRIPT_OBJECT") // :letroll:
+        return 0;
+    const char* name;
+    if (SQ_FAILED(sq_getstring(v, 2, &name)))
+        return 0;
+    QObject* obj = usr->obj;
+    int index = qscript->GetObjectValueIndex((QScriptObject)obj, name);
+    if (index == -1)
+        return 0;
+    QType type = qscript->GetObjectValueType((QScriptObject)obj, index);
+    QValue val;
+    SQInteger sqi;
+    SQBool sqb;
+    SQFloat sqf;
+    switch (type)
+    {
+    case QType_Int:
+        sq_getinteger(v, 3, &sqi);
+        val.value_int = sqi;
+        qscript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    case QType_String:
+        sq_getstring(v, 3, &val.value_string);
+        qscript->SetObjectString((QScriptObject)obj, index, val.value_string);
+        return 0;
+    case QType_Float:
+        sq_getfloat(v, 3, &sqf);
+        val.value_float = sqf;
+        qscript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    case QType_Bool:
+        sq_getbool(v, 3, &sqb);
+        val.value_bool = sqb;
+        qscript->SetObjectValue((QScriptObject)obj, index, val);
+        return 0;
+    default:
+        return 0;
+    }
+}
+/*
+class notherone extends sourcebox_client.testclass
+{
+    function IsIt() {
+        sourcebox_client.Msg("It is");
+    }
+    varar = "yey";
+}
+
+local cool = notherone()
+sourcebox_client.Msg(cool.testvar.tostring())
+sourcebox_client.Msg(cool.varar)
+cool.IsIt()
+*/
+
+
+QInstance* CSquirrelInterface::ExecuteSquirrel(QMod* mod, const char* code, int size)
 {
     HSQUIRRELVM SQ = sq_open(VM_STATIC_STACKSIZE * 2); //i dont think we will get enough stacksize with just 1024
-
+    QInstance* ins = new QInstance();
+    ins->env = SQ;
+    ins->lang = current_interface;
     sq_setforeignptr(SQ, this);
-    dumpstack(SQ);
     sq_enabledebuginfo(SQ, true);
 
     sq_setdebughook(SQ);
-    sq_compilebuffer(SQ, code, size, "squirrel", SQTrue);
+    sq_pushregistrytable(SQ);
 
+        sq_pushstring(SQ, "QSCRIPT_CLASS",-1);
+        sq_newtable(SQ);
+
+            sq_pushstring(SQ, "_call", -1);
+            sq_newclosure(SQ, Squirrel_Class_Call, 0);
+
+        sq_newslot(SQ, -3, false);
+
+            sq_pushstring(SQ, "_inherited", -1);
+            sq_newclosure(SQ, Squirrel_Class_Inherited, 0);
+
+        sq_newslot(SQ, -3, false);
+
+    sq_newslot(SQ, -3, false);
+
+        sq_pushstring(SQ, "QSCRIPT_OBJECT", -1);
+        sq_newtable(SQ);
+
+            sq_pushstring(SQ, "_get", -1);
+            sq_newclosure(SQ, Squirrel_Object_Get, 0);
+
+        sq_newslot(SQ, -3, false);
+
+            sq_pushstring(SQ, "_set", -1);
+            sq_newclosure(SQ, Squirrel_Object_Set, 0);
+
+        sq_newslot(SQ, -3, false);
+
+    sq_newslot(SQ, -3, false);
+
+    sq_pop(SQ, 1);
+
+    sq_pushregistrytable(SQ);
+    sq_pushstring(SQ, "QSCRIPT_CLASS", -1);
+    sq_get(SQ, -2);
+    sq_remove(SQ, -2);
+
+    sq_compilebuffer(SQ, code, size, "squirrel", SQTrue);
     sq_pushroottable(SQ);
     sqstd_seterrorhandlers(SQ);
     for (int i = 0; i < m_modules->Count(); i++)
@@ -262,17 +486,26 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
         for (size_t j = 0; j < mod->functions->Count(); j++)
         {
             QFunction* f = mod->functions->Element(j);
-            sq_pushstring(SQ, f->name, -1);
+            sq_pushstring(SQ, f->func_module->name, -1);
             sq_newclosure(SQ, (SQFUNCTION)f, 0);
             sq_newslot(SQ, -3, false);
-            
-            
+        }
+        for (size_t j = 0; j < mod->classes->Count(); j++)
+        {
+            QClass* cls = mod->classes->Element(j);
+            sq_pushstring(SQ,cls->name,-1);
+            SQ_Userdata* usr = (SQ_Userdata*)sq_newuserdata(SQ,sizeof(SQ_Userdata));
+            usr->cls = cls;
+            sq_settypetag(SQ, -1, "QSCRIPT_CLASS");
+            sq_push(SQ, -7);
+            sq_setdelegate(SQ, -2);
+            sq_newslot(SQ, -3,true);
         }
         sq_newslot(SQ, -3, false);
     }
 
-    base_commands(SQ);
-    sqstd_register_mathlib(SQ);
+    //base_commands(SQ);
+    //sqstd_register_mathlib(SQ);
 
     if (SQ_FAILED(sq_call(SQ, 1,false,true)))
     {
@@ -292,6 +525,7 @@ void CSquirrelInterface::ExecuteSquirrel(const char* code, int size)
         sq_poptop(SQ);
     }
     sq_settop(SQ, 0);
+    return ins;
 }
 
 
@@ -300,8 +534,15 @@ void CSquirrelInterface::ImportModules(CUtlVector<QModule*>* modules)
     m_modules = modules;
 }
 
-QScriptReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
+QReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
 {
+    QReturn p;
+    p.type = QType_None;
+    QValue val;
+    val.value_int = 0;
+    p.value = val;
+    return p;
+    /*
     HSQUIRRELVM SQ = (HSQUIRRELVM)callback->env;
     int top = sq_gettop(SQ);
     sq_pushobject(SQ, *(HSQOBJECT*)(callback->callback));
@@ -333,8 +574,9 @@ QScriptReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
         sq_getstring(SQ, -1, &str);
         Warning("[Squirrel]: %s\n", str);
     }
+    */
 }
-
+/*
 void write_callstack(HSQUIRRELVM SQ, SQInteger level)
 {
     SQStackInfos si;
@@ -359,10 +601,10 @@ void write_callstack(HSQUIRRELVM SQ, SQInteger level)
             
             Warning("Table: %s\n", name);
             
-            /*sq_pushstring(SQ, name, -1);
-            sq_push(SQ, -2);
-            sq_newslot(SQ, -4, SQFalse);
-            sq_pop(SQ, 1);*/
+            //sq_pushstring(SQ, name, -1);
+            //sq_push(SQ, -2);
+            //sq_newslot(SQ, -4, SQFalse);
+            //sq_pop(SQ, 1);
             seq++;
         }
 
@@ -371,5 +613,5 @@ void write_callstack(HSQUIRRELVM SQ, SQInteger level)
 
     Warning("[Squirrel Virtual Machine]: Done\n");
 }
-
+*/
 #endif

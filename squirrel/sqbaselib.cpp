@@ -281,6 +281,7 @@ static SQInteger base_callee(HSQUIRRELVM v)
     }
     return sq_throwerror(v,_SC("no closure in the calls stack"));
 }
+/*
 static const QFunction base_funcs[]={
     //generic
     {1,_SC("seterrorhandler"),NULL,(QCFunc)base_seterrorhandler,2 },
@@ -308,6 +309,7 @@ static const QFunction base_funcs[]={
 #endif
     {0,NULL,NULL,(QCFunc)0,0}
 };
+*/
 
 void sq_base_register(HSQUIRRELVM v)
 {

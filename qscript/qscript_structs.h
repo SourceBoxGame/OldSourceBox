@@ -71,35 +71,5 @@ struct QMod
     CUtlStringMap<QInstance*> instances;
 };
 
-int Qlog2(int val)
-{
-    if (val <= 0)
-        return 0;
-    int answer = 1;
-    val -= 1;
-    while (val >>= 1)
-        answer++;
-    return answer;
-}
-
-bool IsValidPath(const char* pszFilename)
-{
-    if (!pszFilename)
-    {
-        return false;
-    }
-
-    if (Q_strlen(pszFilename) <= 0 ||
-        Q_strstr(pszFilename, "\\\\") ||	// to protect network paths
-        Q_strstr(pszFilename, ":") || // to protect absolute paths
-        Q_strstr(pszFilename, "..") ||   // to protect relative paths
-        Q_strstr(pszFilename, "\n") ||   // CFileSystem_Stdio::FS_fopen doesn't allow this
-        Q_strstr(pszFilename, "\r"))    // CFileSystem_Stdio::FS_fopen doesn't allow this
-    {
-        return false;
-    }
-
-    return true;
-}
 
 #endif

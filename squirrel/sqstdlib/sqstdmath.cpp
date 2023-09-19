@@ -116,10 +116,10 @@ static const SQRegFunction mathlib_funcs[] = {
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
 #endif
-
+/*
 SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
 {
-    /*SQInteger i = 0;
+    SQInteger i = 0;
     while(mathlib_funcs[i].name!=0) {
         sq_pushstring(v,mathlib_funcs[i].name,-1);
         sq_newclosure(v,mathlib_funcs[i].f,0);
@@ -127,7 +127,7 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
         sq_setnativeclosurename(v,-1,mathlib_funcs[i].name);
         sq_newslot(v,-3,SQFalse);
         i++;
-    }*/
+    }
 
     DECL_FUNC_MATH(sqrt, "sqrt", "s", true, v)
     DECL_FUNC_MATH(sin, "sin", "s", true, v)
@@ -156,11 +156,12 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
     DECLARE_SQUIRREL_VARIABLE_INTEGER(RAND_MAX, "RAND_MAX", v)
     DECLARE_SQUIRREL_VARIABLE_FLOAT(M_PI, "PI", v)
 
-    /*sq_pushstring(v, _SC("RAND_MAX"), -1);
-    sq_pushinteger(v,RAND_MAX);
-    sq_newslot(v,-3,SQFalse);
-    sq_pushstring(v,_SC("PI"),-1);
-    sq_pushfloat(v,(SQFloat)M_PI);
-    sq_newslot(v,-3,SQFalse);*/
+    //sq_pushstring(v, _SC("RAND_MAX"), -1);
+    //sq_pushinteger(v,RAND_MAX);
+    //sq_newslot(v,-3,SQFalse);
+    //sq_pushstring(v,_SC("PI"),-1);
+    //sq_pushfloat(v,(SQFloat)M_PI);
+    //sq_newslot(v,-3,SQFalse);
     return SQ_OK;
 }
+*/

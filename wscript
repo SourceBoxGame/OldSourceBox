@@ -88,9 +88,9 @@ projects={
 		'video',
 		'qscript',
 		'lua',
-		'luainterface'
-		#'squirrel',
-		#'squirrelinterface',
+		'luainterface',
+		'squirrel',
+		'squirrelinterface',
 		#'pythoninterface'
 		#'vscript'
 	],
