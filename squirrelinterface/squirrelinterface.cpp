@@ -492,34 +492,40 @@ SQInteger Squirrel_Export(HSQUIRRELVM v)
     SQ_Userdata* usr;
     SQUserPointer tag;
     QExport* qexport = new QExport();
+    QInstance* ins;
+    sq_getuserpointer(v, -1, (SQUserPointer*)&ins);
     if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
     {
-        if (sq_gettype(v, 1) == OT_CLOSURE)
+        if (sq_gettop(v) > 1 && sq_gettype(v, 2) == OT_CLOSURE)
         {
             QCallback* callback = new QCallback();
             HSQOBJECT* funcobj = new HSQOBJECT();
             sq_resetobject(funcobj);
-            sq_getstackobj(v, 1, funcobj);
+            sq_getstackobj(v, 2, funcobj);
             sq_addref(v, funcobj);
             callback->callback = (void*)funcobj;
             callback->env = v;
             callback->lang = current_interface;
-            callback->object = 0;
-            QFunction* func = usr->func;
+            sq_getclosureroot(v, 2);
+            callback->object = malloc(sizeof(HSQOBJECT));
+            sq_resetobject((HSQOBJECT*)callback->object);
+            sq_getstackobj(v, -1, (HSQOBJECT*)callback->object);
+            sq_pop(v, -1);
+            QFunction* func = new QFunction();
             func->always_zero = 0;
             func->func_scripting = callback;
             func->type = QFunction_Scripting;
             qexport->type = QExport_Function;
             qexport->func = func;
-            sq_getclosurename(v, 1);
+            sq_getclosurename(v, 2);
             sq_getstring(v, -1, &qexport->name);
-            return 1;
+            sq_pop(v, 1);
+            ins->exports.AddToTail(qexport);
+            return 0;
         }
         free(qexport);
         return 0; // TODO : error because bad udata
     }
-    QInstance* ins;
-    sq_getuserpointer(v, -1, (SQUserPointer*)&ins);
     if (tag == "QSCRIPT_CLASS")
     {
         QClass* cls = usr->cls;
@@ -642,6 +648,110 @@ cool.IsIt()
 */
 
 
+SQInteger Squirrel_Function_Call(HSQUIRRELVM v)
+{
+    SQ_Userdata* usr;
+    SQUserPointer tag;
+    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+        return 0; // TODO : error because bad udata
+    if (tag != "QSCRIPT_FUNCTION") // :letroll:
+        return 0;
+    QFunction* func = usr->func;
+    int count = sq_gettop(v) - 2;
+    QArgs* qargs = (QArgs*)malloc(count * sizeof(QArg) + sizeof(QArgs));
+    qargs->count = count;
+    switch (func->type)
+    {
+    case QFunction_Scripting:
+        for (int i = 0; i != qargs->count; i++)
+        {
+            union QValue val;
+            SQObjectType type = sq_gettype(v, i + 3);
+            if (type == OT_STRING)
+            {
+                qargs->args[i].type = QType_String;
+                sq_getstring(v, i + 3, &val.value_string);
+            }
+            else if (type == OT_INTEGER)
+            {
+                qargs->args[i].type = QType_Int;
+                SQInteger p;
+                sq_getinteger(v, i + 3, &p);
+                val.value_int = p;
+            }
+            else if (type == OT_FLOAT)
+            {
+                qargs->args[i].type = QType_Float;
+                SQFloat fl;
+                sq_getfloat(v, i + 3, &fl);
+                val.value_float = fl;
+            }
+            else if (type == OT_CLOSURE)
+            {
+                qargs->args[i].type = QType_Function;
+                QCallback* callback = (QCallback*)malloc(sizeof(QCallback));
+                callback->callback = malloc(sizeof(HSQOBJECT));
+                sq_resetobject((HSQOBJECT*)callback->callback);
+                sq_getstackobj(v, i + 3, (HSQOBJECT*)callback->callback);
+                sq_addref(v, (HSQOBJECT*)callback->callback);
+                callback->env = v;
+                callback->lang = current_interface;
+                sq_getclosureroot(v, i + 3);
+                callback->object = malloc(sizeof(HSQOBJECT));
+                sq_resetobject((HSQOBJECT*)callback->object);
+                sq_getstackobj(v, -1, (HSQOBJECT*)callback->object);
+                sq_pop(v, -1);
+                QFunction* func = (QFunction*)malloc(sizeof(QFunction));
+                func->always_zero = 0;
+                func->func_scripting = callback;
+                func->type = QFunction_Scripting;
+                val.value_function = (QScriptFunction)func;
+            }
+            else if (type == OT_BOOL)
+            {
+                qargs->args[i].type = QType_Bool;
+                SQBool bl;
+                sq_getbool(v, i + 3, &bl);
+                val.value_bool = bl;
+            }
+            qargs->args[i].val = val;
+            continue;
+        failure:
+            free(qargs);
+            return 0;
+        }
+        qargs->self = 0;
+        QReturn ret = ((IBaseScriptingInterface*)func->func_scripting->lang)->CallCallback(func->func_scripting, qargs);
+        free(qargs);
+        switch (ret.type)
+        {
+        case QType_Int:
+            sq_pushinteger(v, ret.value.value_int);
+            return 1;
+        case QType_Float:
+            sq_pushfloat(v, ret.value.value_float);
+            return 1;
+        case QType_String:
+            sq_pushstring(v, ret.value.value_string, -1);
+            return 1;
+        case QType_Bool:
+            sq_pushbool(v, ret.value.value_bool);
+            return 1;
+        default:
+            return 0;
+        }
+        break;
+    case QFunction_Module:
+        Warning("Calling QFunction_Module is unsuppported in Squirrel yet (you can add it if you want at line %i in file squirrelinterface.cpp)\n", __LINE__);
+        return 0;
+    case QFunction_Native:
+        Warning("Calling QFunction_Native is unsuppported in Squirrel yet (you can add it if you want at line %i in file squirrelinterface.cpp)\n", __LINE__);
+        return 0;
+    default:
+        return 0;
+    }
+}
+
 QInstance* CSquirrelInterface::ExecuteSquirrel(QMod* mod, const char* code, int size)
 {
     HSQUIRRELVM SQ = sq_open(VM_STATIC_STACKSIZE * 2); //i dont think we will get enough stacksize with just 1024
@@ -696,6 +806,9 @@ QInstance* CSquirrelInterface::ExecuteSquirrel(QMod* mod, const char* code, int 
 
         sq_pushstring(SQ, "QSCRIPT_FUNCTION", -1);
         sq_newtable(SQ);
+
+            sq_pushstring(SQ, "_call", -1);
+            sq_newclosure(SQ, Squirrel_Function_Call, 0);
 
         sq_newslot(SQ, -3, false);
 
@@ -777,12 +890,71 @@ void CSquirrelInterface::ImportModules(CUtlVector<QModule*>* modules)
 
 QReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
 {
-    QReturn p;
-    p.type = QType_None;
+    HSQUIRRELVM v = (HSQUIRRELVM)callback->env;
+    sq_pushobject(v, *(HSQOBJECT*)(callback->callback));
+    sq_pushobject(v, *(HSQOBJECT*)(callback->object));
+    for (int i = 0; i != args->count; i++)
+    {
+        QArg arg = args->args[i];  //ahoy its me mr krabs arg arg arg arg arg arg arg arg
+        switch (arg.type)
+        {
+        case QType_Int:
+            sq_pushinteger(v, arg.val.value_int);
+            break;
+        case QType_String:
+            sq_pushstring(v, arg.val.value_string, -1);
+            break;
+        case QType_Float:
+            sq_pushfloat(v, arg.val.value_float);
+            break;
+        case QType_Bool:
+            sq_pushbool(v, arg.val.value_bool);
+            break;
+        default:
+            sq_pushnull(v);
+        }
+    }
+    if (sq_call(v, args->count + 1, true, false))
+    {
+        const SQChar* str;
+        sq_getstring(v, -1, &str);
+        Warning("[Squirrel]: %s\n", str);
+    }
+    QReturn ret;
+    SQObjectType type = sq_gettype(v, -1);
     QValue val;
-    val.value_int = 0;
-    p.value = val;
-    return p;
+    if (type == OT_STRING)
+    {
+        ret.type = QType_String;
+        sq_getstring(v, -1, &ret.value.value_string);
+    }
+    else if (type == OT_FLOAT)
+    {
+        ret.type = QType_Float;
+        SQFloat p;
+        sq_getfloat(v, -1, &p);
+        ret.value.value_int = p;
+    }
+    else if (type == OT_INTEGER)
+    {
+        ret.type = QType_Int;
+        SQInteger p;
+        sq_getinteger(v, -1, &p);
+        ret.value.value_int = p;
+    }
+    else if (type == OT_BOOL)
+    {
+        ret.type = QType_Bool;
+        SQBool p;
+        sq_getbool(v, -1, &p);
+        ret.value.value_bool = p;
+    }
+    else
+    {
+        ret.type = QType_None;
+        ret.value.value_int = 0;
+    }
+    return ret;
     /*
     HSQUIRRELVM SQ = (HSQUIRRELVM)callback->env;
     int top = sq_gettop(SQ);

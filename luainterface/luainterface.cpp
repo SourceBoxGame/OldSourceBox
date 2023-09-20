@@ -523,7 +523,9 @@ int Lua_QScript_Function_Call(lua_State* L)
     case QFunction_Module:
         return LuaActualCallback(L, func);
     case QFunction_Native:
-        args = (QArgs*)malloc(sizeof(QArgs) + lua_gettop(L) * sizeof(QArg));
+        Warning("Calling QFunction_Native is unsuppported in Lua yet (you can add it if you want at line %i in file luainterface.cpp)\n", __LINE__);
+        return 0;
+        /*args = (QArgs*)malloc(sizeof(QArgs) + lua_gettop(L) * sizeof(QArg));
         args->count = lua_gettop(L);
         ret = func->func_native((QScriptArgs)args);
 
@@ -545,7 +547,7 @@ int Lua_QScript_Function_Call(lua_State* L)
             return 1;
         default:
             return 0;
-        }
+        }*/
     case QFunction_Scripting:
         args = (QArgs*)malloc(count * sizeof(QArg) + sizeof(QArgs));
         args->count = count;
@@ -726,25 +728,25 @@ QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
     if (lua_isstring(L, -1))
     {
         ret.type = QType_String;
-        ret.value.value_string = lua_tolstring(L, 3, 0);
+        ret.value.value_string = lua_tolstring(L, -1, 0);
         return ret;
     }
     if (lua_isinteger(L, -1))
     {
         ret.type = QType_String;
-        ret.value.value_int = lua_tointeger(L, 3);
+        ret.value.value_int = lua_tointeger(L, -1);
         return ret;
     }
     if (lua_isnumber(L, -1))
     {
         ret.type = QType_Float;
-        ret.value.value_float = lua_tonumber(L, 3);
+        ret.value.value_float = lua_tonumber(L, -1);
         return ret;
     }
     if (lua_isboolean(L, -1))
     {
         ret.type = QType_Bool;
-        ret.value.value_bool = (bool)lua_toboolean(L, 3);
+        ret.value.value_bool = (bool)lua_toboolean(L, -1);
         return ret;
     }
     ret.type = QType_None;

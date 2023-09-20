@@ -1467,7 +1467,11 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* function)
             break;
         case QType_Float:
             if (sq_gettype(SQ, i + 2) == OT_FLOAT)
-                sq_getfloat(SQ, i + 2, &val.value_float);
+            {
+                SQFloat p;
+                sq_getfloat(SQ, i + 2, &p);
+                val.value_float = p;
+            }
             else
                 goto failure;
             break;
@@ -1498,7 +1502,11 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* function)
 
         case 'b':
             if (sq_gettype(SQ, i + 2) == OT_BOOL)
-                sq_getbool(SQ, i + 2, (SQBool*)(&qargs->args[i]));
+            {
+                SQBool bl;
+                sq_getbool(SQ, i + 2, &bl);
+                val.value_bool = bl;
+            }
             else
                 goto failure;
             break;
@@ -1512,8 +1520,9 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* function)
         free(qargs);
         return 0;
     }
+    qargs->self = 0;
     QReturn ret = func->func((QScriptArgs)qargs);
-
+    free(qargs);
     switch (ret.type)
     {
     case QType_Int:
