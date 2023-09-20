@@ -841,6 +841,7 @@ bool SQVM::CLASS_OP_UDATA(SQObjectPtr& target, SQInteger baseclass, SQInteger at
         Raise_Error(_SC("trying to inherit from a %s which does not have the _inherited metamethod. (cannot be inherited from)"), GetTypeName(_stack._vals[_stackbase + baseclass])); return false;
     }
     target = SQClass::Create(_ss(this), 0);
+    _class(target)->_ubase = _userdata(udata);
     Push(udata); Push(target); Push(attrs);
     SQObjectPtr ret;
     if (!Call(mt_i, 3, _top - 3, ret, false))
@@ -877,6 +878,44 @@ bool SQVM::CLASS_OP(SQObjectPtr &target,SQInteger baseclass,SQInteger attributes
         Pop(nparams);
     }
     _class(target)->_attributes = attrs;
+    return true;
+}
+
+bool SQVM::Finish(SQObjectPtr& target, SQInteger attributes)
+{
+    SQObjectPtr base;
+    if (_class(target)->_ubase)
+        base = _class(target)->_ubase;
+    else if (_class(target)->_base)
+        base = _class(target)->_base;
+    else
+        return true;
+    SQObjectPtr mt_i;
+    SQObjectPtr attrs;
+    if (attributes != MAX_FUNC_STACKSIZE) {
+        attrs = STK(attributes);
+    }
+    if (sq_type(base) == OT_USERDATA && _userdata(base)->GetMetaMethod(this, MT_FINISH, mt_i))
+    {
+        Push(base); Push(target); Push(attrs);
+        if (!Call(mt_i, 3, _top - 3, target, false))
+        {
+            Pop(3);
+            return false;
+        }
+        Pop(3);
+    }
+    else if (sq_type(base) == OT_CLASS && sq_type(_class(base)->_metamethods[MT_FINISH]) != OT_NULL)
+    {
+        int nparams = 3;
+        Push(base); Push(target); Push(attrs);
+        if (!Call(_class(target)->_metamethods[MT_FINISH], nparams, _top - nparams, target, false))
+        {
+            Pop(nparams);
+            return false;
+        }
+        Pop(nparams);
+    }
     return true;
 }
 
@@ -1307,6 +1346,9 @@ exception_restore:
             case _OP_CLOSE:
                 if(_openouters) CloseOuters(&(STK(arg1)));
                 continue;
+            case _OP_FINISH:
+                _GUARD(Finish(TARGET, arg1));
+                continue;
             }
 
         }
@@ -1467,7 +1509,6 @@ static int SquirrelActualCallback(HSQUIRRELVM SQ, QFunction* function)
         qargs->args[i].val = val;
         continue;
     failure:
-        free(qargs->args);
         free(qargs);
         return 0;
     }
@@ -1794,6 +1835,8 @@ cloned_mt:
     }
 }
 
+
+
 bool SQVM::NewSlotA(const SQObjectPtr &self,const SQObjectPtr &key,const SQObjectPtr &val,const SQObjectPtr &attrs,bool bstatic,bool raw)
 {
     if(sq_type(self) != OT_CLASS) {
@@ -1808,6 +1851,44 @@ bool SQVM::NewSlotA(const SQObjectPtr &self,const SQObjectPtr &key,const SQObjec
             Push(attrs);
             Push(bstatic);
             return CallMetaMethod(mm,MT_NEWMEMBER,5,temp_reg);
+        }
+        else if(c->_ubase && c->_ubase->GetMetaMethod(this,MT_NEWCHILDMEMBER,mm))
+        {
+            Push(self); Push(key); Push(val);
+            Push(attrs);
+            Push(bstatic);
+            CallMetaMethod(mm, MT_NEWCHILDMEMBER, 5, temp_reg);
+            if (sq_type(temp_reg) == OT_BOOL)
+            {
+                if (!_integer(temp_reg))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                Raise_Error(_SC("_newchildmember did not return a boolean"));
+                return false;
+            }
+        }
+        else if (c->_base && sq_type(mm = c->_base->_metamethods[MT_NEWCHILDMEMBER]) != OT_NULL)
+        {
+            Push(self); Push(key); Push(val);
+            Push(attrs);
+            Push(bstatic);
+            CallMetaMethod(mm, MT_NEWCHILDMEMBER, 5, temp_reg);
+            if (sq_type(temp_reg) == OT_BOOL)
+            {
+                if (!_integer(temp_reg))
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                Raise_Error(_SC("_newchildmember did not return a boolean"));
+                return false;
+            }
         }
     }
     if(!NewSlot(self, key, val,bstatic))

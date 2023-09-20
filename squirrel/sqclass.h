@@ -83,6 +83,8 @@ public:
     bool _locked;
     SQInteger _constructoridx;
     SQInteger _udsize;
+    SQUserPointer _up;
+    SQUserData* _ubase;
 };
 
 #define calcinstancesize(_theclass_) \
@@ -99,7 +101,9 @@ public:
         SQInteger size = calcinstancesize(theclass);
         SQInstance *newinst = (SQInstance *)SQ_MALLOC(size);
         new (newinst) SQInstance(ss, theclass,size);
-        if(theclass->_udsize) {
+        if (theclass->_up) {
+            newinst->_userpointer = theclass->_up;
+        } else if(theclass->_udsize) {
             newinst->_userpointer = ((unsigned char *)newinst) + (size - theclass->_udsize);
         }
         return newinst;
@@ -109,7 +113,10 @@ public:
         SQInteger size = calcinstancesize(_class);
         SQInstance *newinst = (SQInstance *)SQ_MALLOC(size);
         new (newinst) SQInstance(ss, this,size);
-        if(_class->_udsize) {
+        if (_class->_up) {
+            newinst->_userpointer = _class->_up;
+        }
+        else if(_class->_udsize) {
             newinst->_userpointer = ((unsigned char *)newinst) + (size - _class->_udsize);
         }
         return newinst;

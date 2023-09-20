@@ -1462,8 +1462,10 @@ public:
         Expect(_SC('{'));
         if(attrs != -1) _fs->PopTarget();
         if(base != -1) _fs->PopTarget();
-        _fs->AddInstruction(_OP_NEWOBJ, _fs->PushTarget(), base, attrs,NOT_CLASS);
+        SQInteger cls = _fs->PushTarget();
+        _fs->AddInstruction(_OP_NEWOBJ, cls, base, attrs,NOT_CLASS);
         ParseTableOrClass(_SC(';'),_SC('}'));
+        _fs->AddInstruction(_OP_FINISH, cls, attrs);
     }
     void DeleteExpr()
     {

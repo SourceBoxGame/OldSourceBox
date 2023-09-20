@@ -33,7 +33,9 @@ void InitQScriptClient()
 {
 	QScriptModule mod = qscript->CreateModule("sourcebox_client",(QModuleDefFunc*)&sourcebox_client);
 	QScriptClassCreator testclass = qscript->StartClass("testclass");
-	qscript->AddVariable(testclass, "testvar", QType_Float);
+	QValue val;
+	val.value_float = 64.7;
+	qscript->AddVariable(testclass, "testvar", QType_Float, val);
 	QScriptClass testclass_made = qscript->FinishClass(testclass);
 	qscript->CreateModuleClass(mod, testclass_made);
 }

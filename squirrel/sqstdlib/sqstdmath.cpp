@@ -17,6 +17,12 @@
     return 1; \
 }
 
+#define SINGLE_ARG_VOID_FUNC(_funcname) static SQInteger math_##_funcname(HSQUIRRELVM v){ \
+    SQFloat f; \
+    sq_getfloat(v,2,&f); \
+    _funcname(f); \
+    return 0; \
+}
 #define TWO_ARGS_FUNC(_funcname) static SQInteger math_##_funcname(HSQUIRRELVM v){ \
     SQFloat p1,p2; \
     sq_getfloat(v,2,&p1); \
@@ -88,6 +94,7 @@ TWO_ARGS_FUNC(sq_RandomInteger)
 _FUNC(sq_srand)
 _FUNC(sq_srandf)
 _FUNC(rand)
+//SINGLE_ARG_VOID_FUNC(sq_randseed)
 
 /*#define _DECL_FUNC(name,nparams,tycheck) {_SC(#name),math_##name,nparams,tycheck}
 static const SQRegFunction mathlib_funcs[] = {
@@ -116,42 +123,42 @@ static const SQRegFunction mathlib_funcs[] = {
 #ifndef M_PI
 #define M_PI (3.14159265358979323846)
 #endif
-/*
+
 SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
 {
     SQInteger i = 0;
-    while(mathlib_funcs[i].name!=0) {
+    /*while (mathlib_funcs[i].name != 0) {
         sq_pushstring(v,mathlib_funcs[i].name,-1);
         sq_newclosure(v,mathlib_funcs[i].f,0);
         sq_setparamscheck(v,mathlib_funcs[i].nparamscheck,mathlib_funcs[i].typemask);
         sq_setnativeclosurename(v,-1,mathlib_funcs[i].name);
         sq_newslot(v,-3,SQFalse);
         i++;
-    }
+    }*/
 
-    DECL_FUNC_MATH(sqrt, "sqrt", "s", true, v)
-    DECL_FUNC_MATH(sin, "sin", "s", true, v)
-    DECL_FUNC_MATH(cos, "cos", "s", true, v)
-    DECL_FUNC_MATH(asin, "asin", "s", true, v)
-    DECL_FUNC_MATH(acos, "acos", "s", true, v)
-    DECL_FUNC_MATH(log, "log", "s", true, v)
-    DECL_FUNC_MATH(log10, "log10", "s", true, v)
-    DECL_FUNC_MATH(tan, "tan", "s", true, v)
-    DECL_FUNC_MATH(atan, "atan", "s", true, v)
-    DECL_FUNC_MATH(atan2, "atan2", "s", true, v)
-    DECL_FUNC_MATH(pow, "pow", "s", true, v)
-    DECL_FUNC_MATH(floor, "floor", "s", true, v)
-    DECL_FUNC_MATH(ceil, "ceil", "s", true, v)
-    DECL_FUNC_MATH(exp, "exp", "s", true, v)
-    DECL_FUNC_MATH(sq_srand, "srand", "s", true, v)
-    DECL_FUNC_MATH(sq_srandf, "srandf", "s", true, v)
-    DECL_FUNC_MATH(rand, "rand", "s", true, v)
-    DECL_FUNC_MATH(fabs, "fabs", "s", true, v)
-    DECL_FUNC_MATH(abs, "abs", "s", true, v)
-    DECL_FUNC_MATH(sq_RandomInteger, "randi", "s", true, v)
+    DECL_FUNC_MATH(sqrt, "sqrt", v)
+    DECL_FUNC_MATH(sin, "sin", v)
+    DECL_FUNC_MATH(cos, "cos", v)
+    DECL_FUNC_MATH(asin, "asin", v)
+    DECL_FUNC_MATH(acos, "acos", v)
+    DECL_FUNC_MATH(log, "log", v)
+    DECL_FUNC_MATH(log10, "log10", v)
+    DECL_FUNC_MATH(tan, "tan", v)
+    DECL_FUNC_MATH(atan, "atan", v)
+    DECL_FUNC_MATH(atan2, "atan2ue", v)
+    DECL_FUNC_MATH(pow, "pow", v)
+    DECL_FUNC_MATH(floor, "floor", v)
+    DECL_FUNC_MATH(ceil, "ceil", v)
+    DECL_FUNC_MATH(exp, "exp", v)
+    DECL_FUNC_MATH(sq_srand, "srand", v)
+    DECL_FUNC_MATH(sq_srandf, "srandf", v)
+    DECL_FUNC_MATH(rand, "rand", v)
+    DECL_FUNC_MATH(fabs, "fabs", v)
+    DECL_FUNC_MATH(abs, "abs", v)
+    DECL_FUNC_MATH(sq_RandomInteger, "randi", v)
+    //DECL_FUNC_MATH(sq_randseed, "randseed", v)
 
-    DECLARE_SQUIRREL_FUNCTION(sq_map, "map", "s", true, v)
-    DECLARE_SQUIRREL_FUNCTION(sq_randseed, "randseed", "s", true, v)
+    INIT_SQUIRREL_FUNCTION(sq_map, "map", v)
 
     DECLARE_SQUIRREL_VARIABLE_INTEGER(RAND_MAX, "RAND_MAX", v)
     DECLARE_SQUIRREL_VARIABLE_FLOAT(M_PI, "PI", v)
@@ -164,4 +171,4 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
     //sq_newslot(v,-3,SQFalse);
     return SQ_OK;
 }
-*/
+

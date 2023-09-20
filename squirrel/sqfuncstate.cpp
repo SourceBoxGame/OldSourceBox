@@ -73,6 +73,7 @@ SQInstructionDesc g_InstrDesc[]={
     {_SC("_OP_NEWSLOTA")},
     {_SC("_OP_GETBASE")},
     {_SC("_OP_CLOSE")},
+    {_SC("_OP_FINISH")},
 };
 #endif
 void DumpLiteral(SQObjectPtr &o)

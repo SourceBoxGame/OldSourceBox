@@ -194,11 +194,16 @@ void CQScript::LoadFilesInDirectory(const char* modname, const char* folder, con
             V_AppendSlash(pFilePath, MAX_PATH);
             strncat(pFilePath, pszFileName, MAX_PATH);
             QMod* mod = GetOrCreateMod(modname);
-            mod->name = modname;
             char pScriptPath[MAX_PATH];
             strncpy(pScriptPath, folder, MAX_PATH);
             V_AppendSlash(pScriptPath, MAX_PATH);
             strncat(pScriptPath, pszFileName, MAX_PATH);
+            if (mod->instances.Defined(pScriptPath))
+            {
+                pszFileName = g_pFullFileSystem->FindNext(findHandle);
+                continue;
+            }
+            mod->name = modname;
             for (int i = 0; i != m_interfaces->Count(); i++)
             {
                 QInstance* ins = m_interfaces->Element(i)->LoadMod(mod, pFilePath);
@@ -207,6 +212,35 @@ void CQScript::LoadFilesInDirectory(const char* modname, const char* folder, con
             }
         }
         pszFileName = g_pFullFileSystem->FindNext(findHandle);
+    }
+}
+
+void CQScript::LoadFile(const char* path)
+{
+    if (!IsValidPath(path))
+        return;
+    const char* scriptPath = strstr(path, "/");
+    if (scriptPath == 0 || scriptPath == path)
+        return;
+    char* modname = new char[MAX_PATH+1];
+    int modlen = (int)(scriptPath - path);
+    strncpy(modname, path, modlen);
+    modname[modlen] = 0;
+    QMod* mod = GetOrCreateMod(modname);
+    if (mod->instances.Defined(path) && mod->instances[path] != 0)
+    {
+        free(modname);
+        return;
+    }
+    mod->name = modname;
+    char globalPath[MAX_PATH];
+    strcpy(globalPath, "mods/");
+    strncat(globalPath, path, MAX_PATH);
+    for (int i = 0; i != m_interfaces->Count(); i++)
+    {
+        QInstance* ins = m_interfaces->Element(i)->LoadMod(mod, globalPath);
+        if (ins)
+            mod->instances[path] = ins;
     }
 }
 
@@ -308,7 +342,7 @@ void CQScript::AddScriptingMethod(QScriptClassCreator creator, const char* name,
     cr->methods.AddToTail(meth);
 }
 
-void CQScript::AddVariable(QScriptClassCreator creator, const char* name, QType type, bool is_private)
+void CQScript::AddVariable(QScriptClassCreator creator, const char* name, QType type, QValue defaultval, bool is_private)
 {
     QClassCreator* cr = (QClassCreator*)creator;
     QVar* var = new QVar();
@@ -316,17 +350,19 @@ void CQScript::AddVariable(QScriptClassCreator creator, const char* name, QType 
     var->is_private = is_private;
     var->type = type;
     var->size = 0;
+    var->defaultval = defaultval;
     cr->vars.AddToTail(var);
 }
 
-void CQScript::AddString(QScriptClassCreator creator, const char* name, int size, bool is_private)
+void CQScript::AddString(QScriptClassCreator creator, const char* name, const char* defaultval, bool is_private)
 {
     QClassCreator* cr = (QClassCreator*)creator;
     QVar* var = new QVar();
     var->name = name;
     var->is_private = is_private;
     var->type = QType_String;
-    var->size = size;
+    var->size = 1<<Qlog2(strlen(defaultval));
+    var->defaultval.value_string = defaultval;
     cr->vars.AddToTail(var);
 }
 
@@ -536,7 +572,7 @@ QType CQScript::GetObjectValueType(QScriptObject object, int index)
     return obj->cls->vars[index].type;
 }
 
-void CQScript::InitalizeObject(QScriptObject object)
+void CQScript::InitializeObject(QScriptObject object)
 {
     QObject* obj = (QObject*)object;
     for (int i = 0; i < obj->cls->vars_count; i++)

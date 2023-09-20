@@ -265,7 +265,7 @@ int Lua_QScript_Object(lua_State* L)
     QClass* cls = luaclass->cls;
     QObject* obj = (QObject*)malloc(sizeof(QObject)+cls->vars_count*sizeof(QValue));
     obj->cls = cls;
-    g_pQScript->InitalizeObject((QScriptObject)obj);
+    g_pQScript->InitializeObject((QScriptObject)obj);
     ((Lua_Userdata*)lua_newuserdata(L, sizeof(Lua_Userdata)))->obj = obj;
     luaL_setmetatable(L, "QSCRIPT_OBJECT");
     return 1;
@@ -471,14 +471,11 @@ int Lua_QScript_Import(lua_State* L)
     if (!mod->instances.Defined(path))
     {
         mod->instances[path] = 0;
-        char importPath[MAX_PATH];
-        strcpy(importPath, "mods/");
-        strncat(importPath, path, MAX_PATH);
-        mod->instances[path] = ((IBaseScriptingInterface*)current_interface)->LoadMod(mod, importPath);
+        g_pQScript->LoadFile(path);
     }
     QInstance* inst = mod->instances[path];
     if (!inst)
-        return 0; // TODO : error here, most likely a import loop
+        return 0; // TODO : error here, most likely a import loop or bad path
     CUtlVector<QExport*>* exports = &mod->instances[path]->exports;
     Lua_Userdata* ud;
     lua_createtable(L, 0, exports->Count());

@@ -291,6 +291,8 @@ SQUIRREL_API SQRESULT sq_setnativeclosurename(HSQUIRRELVM v,SQInteger idx,const 
 SQUIRREL_API SQRESULT sq_setinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer p);
 SQUIRREL_API SQRESULT sq_getinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer *p,SQUserPointer typetag);
 SQUIRREL_API SQRESULT sq_setclassudsize(HSQUIRRELVM v, SQInteger idx, SQInteger udsize);
+SQUIRREL_API SQRESULT sq_setclassup(HSQUIRRELVM v, SQInteger idx, SQUserPointer ud);
+SQUIRREL_API SQRESULT sq_getclassup(HSQUIRRELVM v, SQInteger idx, SQUserPointer *ud);
 SQUIRREL_API SQRESULT sq_newclass(HSQUIRRELVM v,SQBool hasbase);
 SQUIRREL_API SQRESULT sq_createinstance(HSQUIRRELVM v,SQInteger idx);
 SQUIRREL_API SQRESULT sq_setattributes(HSQUIRRELVM v,SQInteger idx);

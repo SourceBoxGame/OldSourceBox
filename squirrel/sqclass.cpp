@@ -13,6 +13,8 @@
 SQClass::SQClass(SQSharedState *ss,SQClass *base)
 {
     _base = base;
+    _ubase = 0;
+    _up = 0;
     _typetag = 0;
     _hook = NULL;
     _udsize = 0;

@@ -22,21 +22,14 @@
 
 #define VM_STATIC_STACKSIZE 1024
 
-#define INIT_SQUIRREL_FUNCTION(funcname, SQ)\
-    sq_pushstring(SQ, funcname##_func->name, -1);\
-    sq_newclosure(SQ, (SQFUNCTION)funcname##_func, 0);\
-    sq_setnativeclosurename(SQ, -1, funcname##_func->name);\
+#define INIT_SQUIRREL_FUNCTION(funcname,sqname, SQ)\
+    sq_pushstring(SQ, sqname, -1);\
+    sq_newclosure(SQ, funcname, 0);\
+    sq_setnativeclosurename(SQ, -1, sqname);\
     sq_newslot(SQ, -3, false);
 
 
-#define DECLARE_SQUIRREL_FUNCTION(funcname, sqname, sqargs, sqnative, SQ)\
-    QFunction* funcname##_func = new QFunction();\
-    funcname##_func->name = sqname;\
-    funcname##_func->args = sqargs;\
-    funcname##_func->func = (QCFunc)funcname##;\
-    funcname##_func->native = sqnative;\
-\
-    INIT_SQUIRREL_FUNCTION(funcname, SQ)
+#define DECLARE_SQUIRREL_FUNCTION(funcname, sqname, SQ) INIT_SQUIRREL_FUNCTION(funcname,sqname, SQ)
 
 
 #define DECLARE_SQUIRREL_VARIABLE_INTEGER(var, sqname, SQ)\

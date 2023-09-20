@@ -830,6 +830,23 @@ SQRESULT sq_setclassudsize(HSQUIRRELVM v, SQInteger idx, SQInteger udsize)
     return SQ_OK;
 }
 
+SQRESULT sq_setclassup(HSQUIRRELVM v, SQInteger idx, SQUserPointer ud)
+{
+    SQObjectPtr& o = stack_get(v, idx);
+    if (sq_type(o) != OT_CLASS) return sq_throwerror(v, _SC("the object is not a class"));
+    if (_class(o)->_locked) return sq_throwerror(v, _SC("the class is locked"));
+    _class(o)->_up = ud;
+    return SQ_OK;
+}
+
+SQRESULT sq_getclassup(HSQUIRRELVM v, SQInteger idx, SQUserPointer *ud)
+{
+    SQObjectPtr& o = stack_get(v, idx);
+    if (sq_type(o) != OT_CLASS) return sq_throwerror(v, _SC("the object is not a class"));
+    if (_class(o)->_locked) return sq_throwerror(v, _SC("the class is locked"));
+    *ud = _class(o)->_up;
+    return SQ_OK;
+}
 
 SQRESULT sq_getinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer *p,SQUserPointer typetag)
 {
