@@ -183,20 +183,10 @@ int Lua_QScript_Index(lua_State* L)
         if (index == -1)
             return 0;
         QFunction* func = (QFunction*)g_pQScript->GetObjectMethod((QScriptObject)obj, index);
-        switch (func->type)
-        {
-        case QFunction_Module:
-            lua_pushcclosure(L, (lua_CFunction)func, 0);
-            return 1;
-        case QFunction_Native:
-            lua_pushcclosure(L, (lua_CFunction)func,0);
-            return 1;
-        case QFunction_Scripting:
-            lua_rawgeti(L, LUA_REGISTRYINDEX, (int)func->func_scripting->callback);
-            return 1;
-        default:
-            return 0;
-        }
+        usr = (Lua_Userdata*)lua_newuserdata(L, sizeof(Lua_Userdata));
+        usr->func = func;
+        luaL_setmetatable(L, "QSCRIPT_FUNCTION");
+        return 1;
     }
     QValue val = g_pQScript->GetObjectValue((QScriptObject)obj, index);
     QType type = g_pQScript->GetObjectValueType((QScriptObject)obj, index);
@@ -554,6 +544,7 @@ int Lua_QScript_Function_Call(lua_State* L)
         args->self = 0;
         for (int i = 0; i < count; i++)
         {
+            Lua_Userdata* nusr;
             union QValue val;
             if (lua_isinteger(L, i + 1))
             {
@@ -589,6 +580,11 @@ int Lua_QScript_Function_Call(lua_State* L)
                 func->type = QFunction_Scripting;
                 val.value_function = (QScriptFunction)func;
             }
+            else if (nusr = (Lua_Userdata*)luaL_testudata(L, i + 1, "QSCRIPT_OBJECT"))
+            {
+                args->args[i].type = QType_Object;
+                val.value_object = (QScriptObject)nusr->obj;
+            }
             args->args[i].val = val;
             continue;
         }
@@ -606,6 +602,10 @@ int Lua_QScript_Function_Call(lua_State* L)
             return 1;
         case QType_Int:
             lua_pushinteger(L, ret.value.value_int);
+            return 1;
+        case QType_Object:
+            ((Lua_Userdata*)lua_newuserdata(L, sizeof(Lua_Userdata)))->obj = (QObject*)ret.value.value_object;
+            luaL_setmetatable(L, "QSCRIPT_OBJECT");
             return 1;
         default:
             return 0;
@@ -704,6 +704,7 @@ QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
     for (int i = 0; i != args->count; i++)
     {
         QArg arg = args->args[i];  //ahoy its me mr krabs arg arg arg arg arg arg arg arg
+        Lua_Userdata* usr;
         switch (arg.type)
         {
         case QType_Int:
@@ -718,9 +719,14 @@ QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
         case QType_Bool:
             lua_pushboolean(L, arg.val.value_bool);
             break;
+        case QType_Object:
+            usr = (Lua_Userdata*)lua_newuserdata(L, sizeof(Lua_Userdata));
+            usr->obj = (QObject*)arg.val.value_object;
+            luaL_setmetatable(L, "QSCRIPT_OBJECT");
+            break;
         default:
-            lua_settop(L, top);
-            return ret;
+            lua_pushnil(L);
+            break;
         }
     }
     if (lua_pcall(L, args->count, 1, 0))
@@ -747,6 +753,13 @@ QReturn CLuaInterface::CallCallback(QCallback* callback, QArgs* args)
     {
         ret.type = QType_Bool;
         ret.value.value_bool = (bool)lua_toboolean(L, -1);
+        return ret;
+    }
+    Lua_Userdata* usr;
+    if (usr = (Lua_Userdata*)luaL_testudata(L, -1, "QSCRIPT_OBJECT"))
+    {
+        ret.type = QType_Object;
+        ret.value.value_object = (QScriptObject)usr->obj;
         return ret;
     }
     ret.type = QType_None;

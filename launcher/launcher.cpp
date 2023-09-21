@@ -1336,6 +1336,8 @@ void CreateGameinfo()
 	char steamDir[MAX_PATH];
 	DWORD BufferSize = 8192;
 	RegGetValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\WOW6432Node\\Valve\\Steam", "InstallPath", RRF_RT_REG_SZ, NULL, (PVOID)&steamDir, &BufferSize);
+	if (!steamDir)
+		return;
 	V_FixDoubleSlashes(steamDir);
 	V_AppendSlash(steamDir, MAX_PATH);
 	V_strncat(steamDir, "steamapps", MAX_PATH);
@@ -1377,9 +1379,7 @@ DLL_EXPORT int LauncherMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR
 DLL_EXPORT int LauncherMain( int argc, char **argv )
 #endif
 {
-#ifdef WIN32
-	CreateGameinfo();
-#endif
+
 #if (defined(LINUX) || defined(PLATFORM_BSD)) && !defined ANDROID
 	// Temporary fix to stop us from crashing in printf/sscanf functions that don't expect
 	//  localization to mess with your "." and "," float seperators. Mac OSX also sets LANG
@@ -1441,7 +1441,12 @@ DLL_EXPORT int LauncherMain( int argc, char **argv )
 #else
 	CommandLine()->CreateCmdLine( argc, argv );
 #endif
-
+#ifdef WIN32
+	if (!CommandLine()->CheckParm("-nsld"))
+	{
+		CreateGameinfo();
+	}
+#endif
 	// No -dxlevel or +mat_hdr_level allowed on POSIX
 #ifdef POSIX	
 	CommandLine()->RemoveParm( "-dxlevel" );
