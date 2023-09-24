@@ -1074,11 +1074,11 @@ void C_HL2MP_Player::CalcViewModelView(const Vector& eyeOrigin, const QAngle& ey
 	Vector vUp;
 	AngleVectors(eyeAngles, &vForward, &vRight, &vUp);
 
-	if (vForward.z < 0.0f)
-	{
-		float fT = vForward.z * vForward.z;
-		vInterpEyeOrigin += vRight * (fT * 4.7f) + vForward * (fT * 5.0f) + vUp * (fT * 4.0f);
-	}
+	//if (vForward.z < 0.0f)
+	//{
+	//	float fT = vForward.z * vForward.z;
+	//	vInterpEyeOrigin += vRight * (fT * 4.7f) + vForward * (fT * 5.0f) + vUp * (fT * 4.0f);
+	//}
 
 	if (UTIL_IntersectEntityExtentsWithPortal(this))
 		g_fMaxViewModelLag = 0.0f;
