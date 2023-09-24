@@ -276,7 +276,10 @@ SQInteger Squirrel_Class_NewChildMember(HSQUIRRELVM v)
         callback->callback = func;
         callback->env = v;
         callback->lang = current_interface;
-        callback->object = usr;
+        callback->object = malloc(sizeof(HSQOBJECT));
+        sq_resetobject((HSQOBJECT*)callback->object);
+        sq_getstackobj(v, 1, (HSQOBJECT*)callback->object);
+        
         qscript->AddScriptingMethod((QScriptClassCreator)usr->creator, name, (QScriptCallback)callback, false);
         sq_pushbool(v, false);
         return 1;
@@ -489,14 +492,17 @@ SQInteger Squirrel_Object_Set(HSQUIRRELVM v)
 }
 SQInteger Squirrel_Export(HSQUIRRELVM v)
 {
+    if (sq_gettop(v) < 2)
+        return 0; // TODO : error with arg count
     SQ_Userdata* usr;
     SQUserPointer tag;
     QExport* qexport = new QExport();
     QInstance* ins;
     sq_getuserpointer(v, -1, (SQUserPointer*)&ins);
-    if (SQ_FAILED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)))
+
+    if (SQ_FAILED(sq_getuserdata(v, 2, (SQUserPointer*)&usr, &tag)))
     {
-        if (sq_gettop(v) > 1 && sq_gettype(v, 2) == OT_CLOSURE)
+        if (sq_gettype(v, 2) == OT_CLOSURE)
         {
             QCallback* callback = new QCallback();
             HSQOBJECT* funcobj = new HSQOBJECT();
@@ -539,9 +545,24 @@ SQInteger Squirrel_Export(HSQUIRRELVM v)
     {
         QObject* obj = usr->obj;
         qexport->type = QExport_Object;
-        qexport->name = sq_getlocal(v, 0, 1);
-        qexport->obj = obj;
-        ins->exports.AddToTail(qexport);
+        sq_push(v, 1);
+        sq_pushnull(v);
+        while (SQ_SUCCEEDED(sq_next(v, -2)))
+        {
+            sq_getuserdata(v, -1, (SQUserPointer*)&usr, &tag);
+            sq_getstring(v, -2, &qexport->name);
+            Msg("%s\n", qexport->name);
+            if (usr->obj == obj)
+            {
+                qexport->obj = obj;
+                ins->exports.AddToTail(qexport);
+                sq_pop(v, 3);
+                return 0;
+            }
+            sq_pop(v, 2);
+        }
+        sq_pop(v, 2);
+        
         return 0;
     }
     free(qexport);
@@ -910,8 +931,18 @@ QReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
         case QType_Bool:
             sq_pushbool(v, arg.val.value_bool);
             break;
+        case QType_Object:
+            ((SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata)))->obj = (QObject*)arg.val.value_object;
+            sq_settypetag(v, -1, "QSCRIPT_OBJECT");
+            sq_pushregistrytable(v);
+            sq_pushstring(v, "QSCRIPT_OBJECT", -1);
+            sq_get(v, -2);
+            sq_remove(v, -2);
+            sq_setdelegate(v, -2);
+            break;
         default:
             sq_pushnull(v);
+            break;
         }
     }
     if (sq_call(v, args->count + 1, true, false))
@@ -921,8 +952,9 @@ QReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
         Warning("[Squirrel]: %s\n", str);
     }
     QReturn ret;
+    ret.type = QType_None;
+    ret.value.value_int = 0;
     SQObjectType type = sq_gettype(v, -1);
-    QValue val;
     if (type == OT_STRING)
     {
         ret.type = QType_String;
@@ -949,10 +981,15 @@ QReturn CSquirrelInterface::CallCallback(QCallback* callback, QArgs* args)
         sq_getbool(v, -1, &p);
         ret.value.value_bool = p;
     }
-    else
+    else if (type == OT_USERDATA)
     {
-        ret.type = QType_None;
-        ret.value.value_int = 0;
+        SQ_Userdata* usr;
+        SQUserPointer tag;
+        if (SQ_SUCCEEDED(sq_getuserdata(v, 1, (SQUserPointer*)&usr, &tag)) && tag == "QSCRIPT_OBJECT")
+        {
+            ret.type = QType_Object;
+            ret.value.value_object = (QScriptObject)usr->obj;
+        }
     }
     return ret;
     /*
