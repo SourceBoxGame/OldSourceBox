@@ -936,7 +936,7 @@ bool GrabSourceMutex()
 	if ( IsPC() )
 	{
 		// don't allow more than one instance to run
-		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT("hl2_singleton_mutex"));
+		g_hMutex = ::CreateMutex(NULL, FALSE, TEXT(WINDOW_MUTEX_SB));
 
 		unsigned int waitResult = ::WaitForSingleObject(g_hMutex, 0);
 
@@ -1467,7 +1467,7 @@ DLL_EXPORT int LauncherMain( int argc, char **argv )
 
 	// Allow the user to explicitly say they want to be able to run multiple instances of the source mutex.
 	// Useful for side-by-side comparisons of different renderers.
-	g_MultiRun = CommandLine()->CheckParm( "-multirun" ) != NULL;
+	g_MultiRun = ( CommandLine()->CheckParm( "-multirun" ) != NULL) || ( CommandLine()->CheckParm("-allowmultiple") != NULL);
 
 #if defined( _X360 )
 	bool bSpewDllInfo = CommandLine()->CheckParm( "-dllinfo" );
@@ -1584,7 +1584,7 @@ DLL_EXPORT int LauncherMain( int argc, char **argv )
 			// directly from the web browser. The -hijack command prevents the launcher from objecting that there is already an instance of the game.
 			if (CommandLine()->CheckParm( "-hijack" ))
 			{
-				HWND hwndEngine = FindWindow( "Valve001", NULL );
+				HWND hwndEngine = FindWindow( WINDOW_CLASSNAME , NULL );
 
 				// Can't find the engine
 				if ( hwndEngine == NULL )

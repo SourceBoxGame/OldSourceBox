@@ -232,9 +232,9 @@ static CGame g_Game;
 IGame *game = ( IGame * )&g_Game;
 
 #if !defined( _X360 )
-const wchar_t CGame::CLASSNAME[] = L"Valve001";
+const wchar_t CGame::CLASSNAME[] = WINDOW_CLASSNAME_L;
 #else
-const char CGame::CLASSNAME[] = "Valve001";
+const char CGame::CLASSNAME[] = WINDOW_CLASSNAME;
 #endif
 
 // In VCR playback mode, it sleeps this amount each frame.

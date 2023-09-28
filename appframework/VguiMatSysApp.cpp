@@ -78,7 +78,7 @@ void*CVguiMatSysApp::CreateAppWindow( char const *pTitle, bool bWindowed, int w,
     wc.style         = CS_OWNDC | CS_DBLCLKS;
     wc.lpfnWndProc   = DefWindowProc;
     wc.hInstance     = (HINSTANCE)GetAppInstance();
-    wc.lpszClassName = "Valve001";
+    wc.lpszClassName = WINDOW_CLASSNAME;
 	wc.hIcon		 = NULL; //LoadIcon( s_HInstance, MAKEINTRESOURCE( IDI_LAUNCHER ) );
 	wc.hIconSm		 = wc.hIcon;
 

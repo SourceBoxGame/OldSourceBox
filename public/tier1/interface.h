@@ -51,6 +51,11 @@
 // TODO: move interface.cpp into tier0 library.
 #include "tier0/platform.h"
 
+
+#define WINDOW_CLASSNAME "SourceBoxInstance"
+#define WINDOW_CLASSNAME_L L"SourceBoxInstance"
+#define WINDOW_MUTEX_SB "sourcebox_singleton_mutex"
+
 // All interfaces derive from this.
 class IBaseInterface
 {

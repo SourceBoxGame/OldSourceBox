@@ -22,6 +22,8 @@
 #include "server.h"
 #include "cdll_int.h"
 
+//#define SWDS
+
 #ifdef SWDS
 void ForceReloadProfile( void );
 
@@ -69,7 +71,7 @@ private:
 static CGame g_Game;
 IGame *game = ( IGame * )&g_Game;
 
-const char CGame::CLASSNAME[] = "Valve001";
+const char CGame::CLASSNAME[] = "SOurceBoxInstance";
 
 // In VCR playback mode, it sleeps this amount each frame.
 int g_iVCRPlaybackSleepInterval = 0;
