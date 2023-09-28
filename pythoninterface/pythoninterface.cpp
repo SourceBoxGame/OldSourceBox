@@ -25,11 +25,10 @@ extern "C"
 static int s_python_init_index = 0;
 static PyModuleDef* s_python_modules = 0;
 static PyMethodDef* s_python_methods = 0;
-static QObject** s_python_types = 0;
-static int* s_python_type_counts = 0;
 static int s_python_module_count = 0;
 IFileSystem* g_pFullFileSystem = 0;
 IQScript* g_pQScript = 0;
+CUtlVector<QModule*>* m_modules = 0;
 
 class CPythonInterface : public IBaseScriptingInterface
 {
@@ -43,6 +42,8 @@ public:
     virtual void CallCallback(QCallback* callback, QArgs* args);
     void ExecutePython(const char* code);
     PyObject* QObjectToPython(QScriptObject obj);
+    
+
 };
 
 static CPythonInterface s_PythonInterface;
@@ -196,8 +197,6 @@ static PyObject* Python_Import_Module(void)
     for (int i = 0; i != s_python_type_counts[s_python_init_index]; i++)
     {
         QObject* obj = &objs[i];
-        if (obj->type != QType_Object)
-            continue;
         PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (obj->value_tree->method_count + obj->value_tree->immutable_methods_count + 1));
         PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (obj->value_tree->obj_count + obj->value_tree->immutable_objs_count + 1));
         int member_index = 0;
@@ -264,15 +263,6 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
     if (s_python_methods)
         free(s_python_methods);
 
-    for (int i = 0; i != s_python_module_count; i++)
-        free(s_python_types[i]);
-
-    if (s_python_types)
-        free(s_python_types);
-
-    if (s_python_type_counts)
-        free(s_python_type_counts);
-
     int methodCount = 0;
 
     for (int i = 0; i != modules->Count(); i++)
@@ -280,12 +270,11 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
 
     s_python_methods = (PyMethodDef*)malloc(methodCount * sizeof(PyMethodDef));
 
-    s_python_types = (QObject**)malloc(modules->Count() * sizeof(QObject*));
-    s_python_type_counts = (int*)malloc(modules->Count() * sizeof(int));
-
     s_python_module_count = modules->Count();
 
     int funcIndex = 0;
+
+    m_modules = modules;
 
     for (int i = 0; i < modules->Count(); i++)
     {
@@ -296,19 +285,10 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
         for (int j = 0; j < mod->functions->Count(); j++)
         {
             QFunction* func = mod->functions->Element(j);
-            s_python_methods[funcIndex] = {                      //Yes. We just DID modify the python interpreter. Everybody has to modify theirs too if they dont want to deal with assembly hacks :)
-                func->name, reinterpret_cast<PyCFunction>(func), METH_QSCRIPT, ""
+            s_python_methods[funcIndex] = {
+                func->func_module->name, reinterpret_cast<PyCFunction>(func->func_module), METH_QSCRIPT, ""
             };
             funcIndex++;
-        }
-
-        s_python_type_counts[i] = mod->objs->Count();
-        s_python_types[i] = (QObject*)malloc(s_python_type_counts[i] * sizeof(QObject));
-
-        for (int j = 0; j < mod->objs->Count(); j++)
-        {
-            QObject* obj = mod->objs->Element(j);
-            memcpy(&s_python_types[i][j], obj, sizeof(QObject));
         }
 
         s_python_methods[funcIndex] = {
