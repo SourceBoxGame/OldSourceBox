@@ -414,6 +414,7 @@ SQInteger Squirrel_Object_Get(HSQUIRRELVM v)
         if (index == -1)
             return 0;
         QFunction* func = (QFunction*)qscript->GetObjectMethod((QScriptObject)obj, index);
+        SQ_Userdata* funcusr;
         switch (func->type)
         {
         case QFunction_Module:
@@ -423,7 +424,14 @@ SQInteger Squirrel_Object_Get(HSQUIRRELVM v)
             sq_newclosure(v, (SQFUNCTION)func, 0);
             return 1;
         case QFunction_Scripting:
-            sq_pushobject(v, *(HSQOBJECT*)func->func_scripting->callback); // TODO : make this push a QFunction
+            funcusr = (SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata));
+            funcusr->func = func;
+            sq_settypetag(v, -1, "QSCRIPT_FUNCTION");
+            sq_pushregistrytable(v);
+            sq_pushstring(v, "QSCRIPT_FUNCTION", -1);
+            sq_get(v, -2);
+            sq_setdelegate(v, -3);
+            sq_pop(v, 1);
             return 1;
         default:
             return 0;

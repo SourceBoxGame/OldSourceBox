@@ -265,8 +265,6 @@ int Lua_QScript_Class(lua_State* L)
 {
     Lua_Userdata* parentluaclass;
     QClass* cls = 0;
-    if (lua_gettop(L) == 0)
-        return 0; // TODO : error here
     if (lua_gettop(L) > 0)
     {
         if (!(parentluaclass = (Lua_Userdata*)luaL_checkudata(L, 1, "QSCRIPT_CLASS")))
