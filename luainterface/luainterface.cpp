@@ -42,7 +42,7 @@ private:
     CUtlVector<QModule*>* m_modules;
 };
 
-static CLuaInterface s_LuaInterface;
+static CLuaInterface s_LuaInterface; // has a name which is QSCRIPT_LANGAUGE_INTERFACE_VERSION
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CLuaInterface, IBaseScriptingInterface, QSCRIPT_LANGAUGE_INTERFACE_VERSION, s_LuaInterface);
 
 
@@ -264,8 +264,6 @@ int Lua_QScript_Class(lua_State* L)
 {
     Lua_Userdata* parentluaclass;
     QClass* cls = 0;
-    if (lua_gettop(L) == 0)
-        return 0; // TODO : error here
     if (lua_gettop(L) > 0)
     {
         if (!(parentluaclass = (Lua_Userdata*)luaL_checkudata(L, 1, "QSCRIPT_CLASS")))
@@ -455,6 +453,11 @@ int Lua_QScript_Import(lua_State* L)
     const char* path;
     if (!(path = luaL_checkstring(L, 1)))
         return 0; // TODO : error here, string is required
+    //import("librarymod/lib.nut")
+    //-> library/lib.nut -> GETS PASSED TO LOADFILE
+    //-> mods/librarymod/lib.nut -> LOADFILE PASSES THIS TO FILESYSTEM
+    //-> sourcebox/mods/librarymod/lib.nut -> FILESYSTEM PASSES THIS TO GLOBAL FILESYSTEM
+    //-> C:/sourcebox/sourcebox/mods/librarymod.nut -> GLOBAL FILESYSTEM ACTUALLY READS THIS
     if (!IsValidPath(path))
         return 0; // TODO : error here, nuh uh
     if (!mod->instances.Defined(path))
@@ -621,23 +624,35 @@ QInstance* CLuaInterface::ExecuteLua(QMod* mod, const char* code, int size)
     ins->lang = (IBaseScriptingInterface*)current_interface;
     luaL_openlibs(L);
     luaL_newmetatable(L, "QSCRIPT_OBJECT");
-    lua_pushstring(L, "__index");
+    lua_pushstring(L, "__index"); // variable = object.some_value --> variable = object:__index("some_value")
     lua_pushcclosure(L, Lua_QScript_Index, 0);
     lua_settable(L, -3);
-    lua_pushstring(L, "__newindex");
+    lua_pushstring(L, "__newindex"); // object.some_value = "foo" --> object:__newindex("some_value","foo")
     lua_pushcclosure(L, Lua_QScript_New_Index, 0);
+    lua_settable(L, -3);
+    lua_pushstring(L, "__metatable");
+    lua_pushstring(L, "nie dla psa");
     lua_settable(L, -3);
     lua_pop(L, 1);
     luaL_newmetatable(L, "QSCRIPT_CLASS");
+    lua_pushstring(L, "__metatable");
+    lua_pushstring(L, "nie dla psa");
+    lua_settable(L, -3);
     lua_pop(L, 1);
     luaL_newmetatable(L, "QSCRIPT_FUNCTION");
     lua_pushstring(L, "__call");
-    lua_pushcclosure(L, Lua_QScript_Function_Call, 0);
+    lua_pushcclosure(L, Lua_QScript_Function_Call, 0); // func(...) --> func:__call(...)
+    lua_settable(L, -3);
+    lua_pushstring(L, "__metatable");
+    lua_pushstring(L, "nie dla psa");
     lua_settable(L, -3);
     lua_pop(L, 1);
     luaL_newmetatable(L, "QSCRIPT_CLASS_CREATOR");
     lua_pushstring(L, "__newindex");
     lua_pushcclosure(L, Lua_QScript_Class_Creator_NewIndex, 0);
+    lua_settable(L, -3);
+    lua_pushstring(L, "__metatable");
+    lua_pushstring(L, "nie dla psa");
     lua_settable(L, -3);
     lua_pop(L, 1);
     lua_pushcclosure(L, Lua_QScript_Object, 0);

@@ -248,9 +248,9 @@ SQInteger Squirrel_Class_Finish(HSQUIRRELVM v)
 {
     SQ_Userdata* usr;
     sq_getclassup(v, 2, (SQUserPointer*)&usr);
-    SQ_Userdata* newusr = (SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata));
+    sq_pushobject(v, *(HSQOBJECT*)usr->creator->misc);
     sq_settypetag(v, -1, "QSCRIPT_CLASS");
-    newusr->cls = (QClass*)qscript->FinishClass((QScriptClassCreator)usr->creator);
+    usr->cls = (QClass*)qscript->FinishClass((QScriptClassCreator)usr->creator);
     sq_pushregistrytable(v);
     sq_pushstring(v, "QSCRIPT_CLASS",-1);
     sq_get(v, -2);
@@ -275,9 +275,7 @@ SQInteger Squirrel_Class_NewChildMember(HSQUIRRELVM v)
         callback->callback = func;
         callback->env = v;
         callback->lang = current_interface;
-        callback->object = malloc(sizeof(HSQOBJECT));
-        sq_resetobject((HSQOBJECT*)callback->object);
-        sq_getstackobj(v, 1, (HSQOBJECT*)callback->object);
+        callback->object = usr->creator->misc;
         
         qscript->AddScriptingMethod((QScriptClassCreator)usr->creator, name, (QScriptCallback)callback, false);
         sq_pushbool(v, false);
@@ -328,9 +326,17 @@ SQInteger Squirrel_Class_Inherited(HSQUIRRELVM v)
     if (tag != "QSCRIPT_CLASS") // :letroll:
         return 0;
     QClass* cls = usr->cls;
-    SQ_Userdata* newusr = new SQ_Userdata();
+    SQ_Userdata* newusr = (SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata));
     sq_setclassup(v, 2, newusr);
     newusr->creator = (QClassCreator*)qscript->StartClass(sq_getlocal(v, 0, 2), (QScriptClass)cls);
+
+    HSQOBJECT* userdata = new HSQOBJECT();
+    sq_resetobject(userdata);
+    sq_getstackobj(v, -1, userdata);
+    sq_addref(v, userdata);
+    newusr->creator->misc = userdata;
+    sq_pop(v, 1);
+
     /*int index = 0;
     for (int i = 0; i < cls->sigs_count; i++)
     {
@@ -407,6 +413,7 @@ SQInteger Squirrel_Object_Get(HSQUIRRELVM v)
         if (index == -1)
             return 0;
         QFunction* func = (QFunction*)qscript->GetObjectMethod((QScriptObject)obj, index);
+        SQ_Userdata* funcusr;
         switch (func->type)
         {
         case QFunction_Module:
@@ -416,7 +423,14 @@ SQInteger Squirrel_Object_Get(HSQUIRRELVM v)
             sq_newclosure(v, (SQFUNCTION)func, 0);
             return 1;
         case QFunction_Scripting:
-            sq_pushobject(v, *(HSQOBJECT*)func->func_scripting->callback); // TODO : make this push a QFunction
+            funcusr = (SQ_Userdata*)sq_newuserdata(v, sizeof(SQ_Userdata));
+            funcusr->func = func;
+            sq_settypetag(v, -1, "QSCRIPT_FUNCTION");
+            sq_pushregistrytable(v);
+            sq_pushstring(v, "QSCRIPT_FUNCTION", -1);
+            sq_get(v, -2);
+            sq_setdelegate(v, -3);
+            sq_pop(v, 1);
             return 1;
         default:
             return 0;

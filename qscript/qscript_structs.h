@@ -35,6 +35,7 @@ struct QClassCreator
     const char* name;
     CUtlVector<QClassCreatorMethod*> methods;
     CUtlVector<QVar*> vars;
+    void* misc; //use for anything you need
 };
 
 enum QExport_Type
