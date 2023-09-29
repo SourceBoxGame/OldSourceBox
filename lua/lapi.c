@@ -577,7 +577,7 @@ LUA_API const char *lua_pushfstring (lua_State *L, const char *fmt, ...) {
 }
 
 
-LUA_API void lua_pushcclosure (lua_State *L, QFunction* fn, int n) {
+LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n) {
   lua_lock(L);
   if (n == 0) {
     setfvalue(s2v(L->top.p), fn);
@@ -1022,7 +1022,7 @@ LUA_API void lua_callk (lua_State *L, int nargs, int nresults,
   adjustresults(L, nresults);
   lua_unlock(L);
 }
-__declspec(dllimport) void Warning(const char* pMsg, ...);
+extern void Warning(const char* pMsg, ...);
 void dumpstack(lua_State* L) {
     int top = lua_gettop(L);
     for (int i = 1; i <= top; i++) {

@@ -13,7 +13,7 @@ extern "C" {
 
 SQUIRREL_API SQRESULT sqstd_register_mathlib(HSQUIRRELVM v);
 
-#define DECL_FUNC_MATH(funcname, sqname, SQ) INIT_SQUIRREL_FUNCTION(math_##funcname##, sqname, SQ)
+#define DECL_FUNC_MATH(funcname, sqname, SQ) INIT_SQUIRREL_FUNCTION(math_##funcname, sqname, SQ)
 
 #ifdef __cplusplus
 } /*extern "C"*/
