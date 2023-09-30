@@ -13,7 +13,6 @@
 #include "../squirrel/include/squirrel.h"
 #include "../squirrel/include/sqstdstring.h"
 #include "sqvm.h"
-#include "Windows.h"
 #include "utlvector.h"
 #include "convar.h"
 #include "tier1.h"
@@ -776,14 +775,6 @@ SQInteger Squirrel_Function_Call(HSQUIRRELVM v)
             return 0;
         }
         break;
-    case QFunction_Module:
-        Warning("Calling QFunction_Module is unsuppported in Squirrel yet (you can add it if you want at line %i in file squirrelinterface.cpp)\n", __LINE__);
-        return 0;
-    case QFunction_Native:
-        Warning("Calling QFunction_Native is unsuppported in Squirrel yet (you can add it if you want at line %i in file squirrelinterface.cpp)\n", __LINE__);
-        return 0;
-    default:
-        return 0;
     }
 }
 

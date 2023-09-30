@@ -1,5 +1,5 @@
-#ifndef CPYTHONINTERFACE_H
-#define CPYTHONINTERFACE_H
+#ifndef CLUAINTERFACE_H
+#define CLUAINTERFACE_H
 #ifdef _WIN32
 #pragma once
 #endif
@@ -10,7 +10,6 @@
 #include "qscript_defs.h"
 #include "qscript_structs.h"
 #include "lua.hpp"
-#include "Windows.h"
 #include "utlvector.h"
 #include "convar.h"
 #include "tier1.h"
@@ -613,8 +612,6 @@ int Lua_QScript_Function_Call(lua_State* L)
         default:
             return 0;
         }
-    case QFunction_Void:
-        return 0;
     }
     return 0;
 }

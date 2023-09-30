@@ -14,7 +14,6 @@
 #include "../squirrel/include/squirrel.h"
 #include "../squirrel/include/sqstdstring.h"
 #include "sqvm.h"
-#include "Windows.h"
 #include "utlvector.h"
 #include "convar.h"
 #include "tier1.h"
@@ -33,19 +32,19 @@
 
 
 #define DECLARE_SQUIRREL_VARIABLE_INTEGER(var, sqname, SQ)\
-        sq_pushstring(SQ, _SC(sqname##), -1);\
-        sq_pushinteger(SQ, var##);\
+        sq_pushstring(SQ, _SC(sqname), -1);\
+        sq_pushinteger(SQ, var);\
         sq_newslot(SQ, -3, SQFalse);
 
 #define DECLARE_SQUIRREL_VARIABLE_FLOAT(var, sqname, SQ)\
-        sq_pushstring(SQ, _SC(sqname##), -1);\
-        sq_pushfloat(SQ, var##);\
+        sq_pushstring(SQ, _SC(sqname), -1);\
+        sq_pushfloat(SQ, var);\
         sq_newslot(SQ, -3, SQFalse);
 
 
 #define DECLARE_SQUIRREL_VARIABLE_STRING(var, sqname, SQ)\
-        sq_pushstring(SQ, _SC(sqname##), -1);\
-        sq_pushstring(SQ, _SC(var##), -1);\
+        sq_pushstring(SQ, _SC(sqname), -1);\
+        sq_pushstring(SQ, _SC(var), -1);\
         sq_newslot(SQ, -3, SQFalse);
 
 

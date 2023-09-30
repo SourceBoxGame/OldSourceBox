@@ -12,8 +12,9 @@ def options(opt):
 	return
 
 def configure(conf):
-	conf.env.CFLAGS = ["/Z7"]
-	conf.env.CXXFLAGS = ["/Z7"]
+	if conf.env.DEST_OS == "win32":
+		conf.env.CFLAGS = ["/Z7"]
+		conf.env.CXXFLAGS = ["/Z7"]
 	return
 
 def build(bld):

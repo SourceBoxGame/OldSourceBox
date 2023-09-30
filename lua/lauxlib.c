@@ -933,7 +933,7 @@ LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
 ** function gets the 'nup' elements at the top as upvalues.
 ** Returns with only the table at the stack.
 */
-LUALIB_API void luaL_setfuncs(lua_State* L, const luaL_Reg* l, int nup) {
+LUALIB_API void luaL_setfuncs(lua_State* L, luaL_Reg* l, int nup) {
     luaL_checkstack(L, nup, "too many upvalues");
     for (; l->name != NULL; l++) {  /* fill the table with given functions */
         if (l->func == NULL)  /* place holder? */
@@ -955,7 +955,7 @@ LUALIB_API void luaL_setfuncs(lua_State* L, const luaL_Reg* l, int nup) {
 ** function gets the 'nup' elements at the top as upvalues.
 ** Returns with only the table at the stack.
 */
-LUALIB_API void luaL_setfuncsqscript(lua_State* L, const QFunction** l, int nup, int count) {
+LUALIB_API void luaL_setfuncsqscript(lua_State* L, QFunction** l, int nup, int count) {
     luaL_checkstack(L, nup, "too many upvalues");
     for (int i = 0; i < count; i++) {  /* fill the table with given functions */
         if (l[i]->func_module->func == NULL)  /* place holder? */
