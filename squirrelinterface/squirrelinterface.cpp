@@ -1,5 +1,5 @@
 #ifndef CSQUIRRELINTERFACE
-#define CSQUIRRELTERFACE
+#define CSQUIRRELINTERFACE
 #ifdef _WIN32
 #pragma once
 #endif

@@ -93,7 +93,7 @@ bool CQScript::Connect(CreateInterfaceFn factory)
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
     AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
-    //AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
+    AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
     return true;
 }
 

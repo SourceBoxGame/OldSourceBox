@@ -210,7 +210,7 @@ private:
 	int GetProportionalNormalizedValue_( int rootWide, int rootTall, int scaledValue );
 
 	// Search for already-loaded schemes
-	HScheme FindLoadedScheme(const char *fileName);
+	HScheme FindLoadedScheme(const char *fileName, const char* tag);
 
 	CUtlVector<CScheme *> m_Schemes;
 
@@ -369,16 +369,21 @@ void CSchemeManager::Shutdown( bool full )
 //-----------------------------------------------------------------------------
 // Purpose: loads a scheme from disk
 //-----------------------------------------------------------------------------
-HScheme CSchemeManager::FindLoadedScheme(const char *fileName)
+HScheme CSchemeManager::FindLoadedScheme(const char *fileName, const char* tag)
 {
+	//Msg("\nSearching %s:\n",fileName);
 	// Find the scheme in the list of already loaded schemes
 	for (int i = 1; i < m_Schemes.Count(); i++)
 	{
 		char const *schemeFileName = m_Schemes[i]->GetFileName();
-		if (!stricmp(schemeFileName, fileName))
+		//Msg("Checking for %s\n", schemeFileName);
+		if (stricmp(schemeFileName, fileName) == 0 && stricmp(m_Schemes[i]->GetName(),tag) == 0)
+		{
+			//Msg("Found!\n");
 			return i;
+		}
 	}
-
+	//Msg("Didnt find %s\n\n", fileName);
 	return 0;
 }
 
@@ -416,7 +421,7 @@ HScheme  CSchemeManager::LoadSchemeFromFileEx( VPANEL sizingPanel, const char *f
 
 	if (!data)
 	{	
-		HScheme hScheme = FindLoadedScheme(fileName);
+		HScheme hScheme = FindLoadedScheme(fileName,tag);
 		if (hScheme != 0)
 		{
 			CScheme* pScheme = static_cast<CScheme*>(GetIScheme(hScheme));
@@ -424,7 +429,7 @@ HScheme  CSchemeManager::LoadSchemeFromFileEx( VPANEL sizingPanel, const char *f
 			{
 				pScheme->ReloadFontGlyphs();
 			}
-			//GamepadUI_Log("Found loaded scheme: %s; ID: %u\n", fileName, hScheme);
+			ConColorMsg(Color(247, 154, 16, 255), "Found loaded scheme: %s; ID: %u\n", fileName, hScheme);
 			return hScheme;
 		}
 		data = new KeyValues("Scheme");
@@ -434,15 +439,15 @@ HScheme  CSchemeManager::LoadSchemeFromFileEx( VPANEL sizingPanel, const char *f
 		bool result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
 		if (!result) // Not found
 		{
-			result = data->LoadFromFile(g_pFullFileSystem, fileName);
+			result = data->LoadFromFile(g_pFullFileSystem, fileName, NULL);
 			if (!result) {
 				data->deleteThis();
 				return 0;
 			}
-			//GamepadUI_Log("Loaded original scheme: %s; ID: %u\n", fileName, hScheme);
+			ConColorMsg(Color(247, 154, 16, 255), "Loaded original scheme: %s; ID: %u\n", fileName, hScheme);
 		}
-		//else
-			//GamepadUI_Log("Loaded overriden scheme: %s; ID: %u\n", fileName, hScheme);
+		else
+			ConColorMsg(Color(247, 154, 16, 255), "Loaded overriden scheme: %s; ID: %u\n", fileName, hScheme);
 		//ignore_tag = true;
 	}
 	
@@ -462,11 +467,11 @@ HScheme  CSchemeManager::LoadSchemeFromFileEx( VPANEL sizingPanel, const char *f
 	{
 		data->ProcessResolutionKeys( "_vrmode" );
 	}
-	HScheme hScheme = /*ignore_tag ? 0 : */GetSchemeNoDefault(tag);
+	HScheme hScheme = /*ignore_tag ? 0 : */FindLoadedScheme(fileName, tag);
 	if (hScheme != 0)
 	{
+		Msg("Using existing theme: %s %s\n", tag, fileName);
 		CScheme* pScheme = static_cast<CScheme*>(GetIScheme(hScheme));
-		pScheme->Shutdown(false);
 		pScheme->LoadFromFile(sizingPanel, fileName, tag, data);
 		return hScheme;
 	}
@@ -474,7 +479,7 @@ HScheme  CSchemeManager::LoadSchemeFromFileEx( VPANEL sizingPanel, const char *f
 	{
 		CScheme* newScheme = new CScheme();
 		newScheme->LoadFromFile(sizingPanel, fileName, tag, data);
-		//GamepadUI_Log("Adding new scheme: %s\n", fileName);
+		Msg("Adding new scheme: %s %s\n", tag, fileName);
 		return m_Schemes.AddToTail(newScheme);
 	}
 }
@@ -1259,8 +1264,10 @@ HScheme CSchemeManager::GetDefaultScheme()
 //-----------------------------------------------------------------------------
 HScheme CSchemeManager::GetScheme(const char *tag)
 {
+	Msg("\n");
 	for (int i=1;i<m_Schemes.Count();i++)
 	{
+		Msg("Checking %s  %s  %s\n", tag, m_Schemes[i]->GetFileName(), m_Schemes[i]->GetName());
 		if ( !stricmp(tag,m_Schemes[i]->GetName()) )
 		{
 			return i;

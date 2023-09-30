@@ -38,10 +38,9 @@ public:
     virtual bool Connect(CreateInterfaceFn factory);
     virtual void Shutdown();
     virtual void ImportModules(CUtlVector<QModule*>* modules);
-    virtual void LoadMod(const char* path);
-    virtual void CallCallback(QCallback* callback, QArgs* args);
-    void ExecutePython(const char* code);
-    PyObject* QObjectToPython(QScriptObject obj);
+    virtual QInstance* LoadMod(QMod* mod, const char* path);
+    virtual QReturn CallCallback(QCallback* callback, QArgs* args);
+    QInstance* ExecutePython(const char* code);
     
 
 };
@@ -91,11 +90,11 @@ void CPythonInterface::Shutdown()
 
 
 static CUtlBuffer* codebuffer = 0;
-void CPythonInterface::LoadMod(const char* path)
+QInstance* CPythonInterface::LoadMod(QMod* mod, const char* path)
 {
     int len = strlen(path);
     if (!(path[len - 3] == '.' && path[len - 2] == 'p' && path[len - 1] == 'y'))
-        return;
+        return 0;
 
     if (codebuffer == 0)
         codebuffer = new CUtlBuffer();
@@ -103,10 +102,10 @@ void CPythonInterface::LoadMod(const char* path)
     codebuffer->Clear();
 
     if (g_pFullFileSystem->ReadFile(path, NULL, *codebuffer))
-        s_PythonInterface.ExecutePython((const char*)(codebuffer->Base()));
+        return ExecutePython((const char*)(codebuffer->Base()));
 }
 
-void CPythonInterface::ExecutePython(const char* code)
+QInstance* CPythonInterface::ExecutePython(const char* code)
 {
     // Create and initialize the new interpreter.
     assert(save_tstate != NULL);
@@ -116,7 +115,10 @@ void CPythonInterface::ExecutePython(const char* code)
     PyStatus status = Py_NewInterpreterFromConfig(&tstate, &config);
     PyRun_SimpleString(code);
     
-
+    QInstance* inst = new QInstance();
+    inst->lang = current_interface;
+    inst->env = tstate;
+    return inst;
 }
 
 struct Python_QObject
@@ -125,45 +127,41 @@ struct Python_QObject
     QObject* obj;
 };
 
-struct Python_QObject_Member
-{
-    QObject* value;
-    QObject* parent;
-};
-
 static PyObject* Python_Get_QObject_Member(PyObject* obj, void* ch)
 {
-    QObject* child = ((Python_QObject_Member*)ch)->value;
-    switch (child->type)
+    QType type = ((Python_QObject*)obj)->obj->cls->vars[(int)ch].type;
+    QValue val = ((Python_QObject*)obj)->obj->vars[(int)ch];
+    switch (type)
     {
     case QType_Int:
-        return PyLong_FromLong(child->value_int);
+        return PyLong_FromLong(val.value_int);
     case QType_Bool:
-        return PyBool_FromLong(child->value_bool);
+        return PyBool_FromLong(val.value_bool);
     case QType_Float:
-        return PyFloat_FromDouble((double)child->value_float);
+        return PyFloat_FromDouble((double)val.value_float);
     case QType_String:
-        return PyUnicode_FromString(child->value_string);
+        return PyUnicode_FromString(val.value_string);
     default:
         return Py_None;
     }
 }
 
-static int Python_Set_QObject_Member(PyObject* obj, PyObject* val, void* ch)
+static int Python_Set_QObject_Member(PyObject* obj, PyObject* pyval, void* ch)
 {
-    QObject* child = ((Python_QObject_Member*)ch)->value;
-    switch (child->type)
+    QType type = ((Python_QObject*)obj)->obj->cls->vars[(int)ch].type;
+    QValue* val = &(((Python_QObject*)obj)->obj->vars[(int)ch]);
+    switch (type)
     {
     case QType_Int:
-        child->value_int = PyLong_AsLong(val); break;
+        val->value_int = PyLong_AsLong(pyval); break;
     case QType_Bool:
-        child->value_bool = Py_IsTrue(val); break;
+        val->value_bool = Py_IsTrue(pyval); break;
     case QType_Float:
-        child->value_float = (float)PyFloat_AsDouble(val); break;
+        val->value_float = (float)PyFloat_AsDouble(pyval); break;
     case QType_String:
-        child->value_string = PyUnicode_AsUTF8(val); break;
+        val->value_string = PyUnicode_AsUTF8(pyval); break;
     default:
-        PyErr_Format(PyExc_TypeError, "%s.%s has invalid type (%i) while trying to set it to %s", obj->ob_type->tp_name, child->name, child->type, PyUnicode_AsUTF8(PyObject_Str(val)));
+        PyErr_Format(PyExc_TypeError, "%s.%s has invalid type (%i) while trying to set it to %s", obj->ob_type->tp_name, ((Python_QObject*)obj)->obj->cls->vars[(int)ch].name, type, PyUnicode_AsUTF8(PyObject_Str(pyval)));
         return -1;
     }
     return 0;
@@ -178,73 +176,63 @@ Python_QObject_New(PyTypeObject* type, PyObject* args, PyObject* kwds)
     self = (Python_QObject*)type->tp_alloc(type, 0);
     if (!self)
         return NULL;
-    if (!self->ob_base.ob_type->tp_getset[0].name)
-    {
-        self->obj = new QObject();
-        return (PyObject*)self;
-    }
-    QObject* obj = ((Python_QObject_Member*)self->ob_base.ob_type->tp_getset[0].closure)->parent;
-    QObject* newobj;
-    CopyQObject(&newobj, obj);
-    self->obj = newobj;
+    self->obj = (QObject*)g_pQScript->CreateObject((QScriptClass)self->ob_base.ob_type->tp_userdata);
+    g_pQScript->InitializeObject((QScriptObject)self->obj);
+    Py_INCREF(self);
     return (PyObject*)self;
 }
 
-static PyObject* Python_Import_Module(void)
+PyObject* Python_QClass_Init_Subclass(PyObject* self, PyObject* args)
+{
+    Msg("%llx %s\n", self, PyUnicode_AsUTF8(PyObject_Str(args)));
+    return 0;
+}
+
+static PyObject* Python_Import_Module()
 {
     PyObject *m = PyModule_Create(&s_python_modules[s_python_init_index]);
-    QObject* objs = s_python_types[s_python_init_index];
-    for (int i = 0; i != s_python_type_counts[s_python_init_index]; i++)
+    QModule* mod = m_modules->Element(s_python_init_index);
+    CUtlVector<QClass*>* classes = mod->classes;
+    for (int i = 0; i != classes->Count(); i++)
     {
-        QObject* obj = &objs[i];
-        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (obj->value_tree->method_count + obj->value_tree->immutable_methods_count + 1));
-        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (obj->value_tree->obj_count + obj->value_tree->immutable_objs_count + 1));
+        QClass* cls = classes->Element(i);
+
+        PyMethodDef* methods = (PyMethodDef*)malloc(sizeof(PyMethodDef) * (cls->methods_count + 1));
+        PyGetSetDef* members = (PyGetSetDef*)malloc(sizeof(PyGetSetDef) * (cls->vars_count + 1));
         int member_index = 0;
         int method_index = 0;
-        for (int j = 0; j != obj->value_tree->obj_count; j++)
+        for (int j = 0; j != cls->vars_count; j++)
         {
-            QObject* child = obj->value_tree->objs[j];
-            Python_QObject_Member* memb;
-            memb = new Python_QObject_Member();
-            memb->value = child;
-            memb->parent = obj;
-            members[member_index++] = { child->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,memb };
+            QVar* var = &cls->vars[j];
+            members[member_index++] = { var->name,Python_Get_QObject_Member,Python_Set_QObject_Member,NULL,(void*)j };
         }
-        for (int j = 0; j != obj->value_tree->method_count; j++)
+        for (int j = 0; j != cls->sigs_count; j++)
         {
-            QFunction* func = obj->value_tree->methods[j];
-            methods[method_index++] = { func->name,reinterpret_cast<PyCFunction>(func), METH_OBJQSCRIPT, 0 };
-        }
-        for (int j = 0; j != obj->value_tree->immutable_objs_count; j++)
-        {
-            QObject* child = obj->value_tree->immutable_objs[j];
-            Python_QObject_Member* memb;
-            memb = new Python_QObject_Member();
-            memb->value = child;
-            memb->parent = obj;
-            members[member_index++] = { child->name,Python_Get_QObject_Member,NULL,NULL,memb };
-        }
-        for (int j = 0; j != obj->value_tree->immutable_methods_count; j++)
-        {
-            QFunction* func = obj->value_tree->immutable_methods[j];
-            methods[method_index++] = { func->name,reinterpret_cast<PyCFunction>(func), METH_OBJQSCRIPT, 0 };
+            QInterface* sig = cls->sigs[j];
+            for (int k = 0; k != sig->count; k++)
+            {
+                methods[method_index++] = { sig->names[k],reinterpret_cast<PyCFunction>(&cls->methods[method_index]), METH_OBJQSCRIPT, 0};
+            }
         }
         members[member_index++] = { NULL,NULL,NULL,NULL,NULL };
         methods[method_index++] = { NULL,NULL,NULL,NULL };
+
+
         PyTypeObject* pytypeobj = new PyTypeObject();
         pytypeobj->ob_base = { { 1 },NULL };
-        char* obj_name = (char*)malloc(strlen(obj->name) + strlen(s_python_modules[s_python_init_index].m_name) + 2);
-        sprintf(obj_name, "%s.%s", s_python_modules[s_python_init_index].m_name, obj->name);
-        pytypeobj->tp_name = obj_name;
+        char* cls_name = (char*)malloc(strlen(cls->name) + strlen(s_python_modules[s_python_init_index].m_name) + 2);
+        sprintf(cls_name, "%s.%s", s_python_modules[s_python_init_index].m_name, cls->name);
+        pytypeobj->tp_name = cls_name;
         pytypeobj->tp_getset = members;
         pytypeobj->tp_methods = methods;
         pytypeobj->tp_basicsize = sizeof(Python_QObject);
         pytypeobj->tp_itemsize = 0;
         pytypeobj->tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
         pytypeobj->tp_new = Python_QObject_New;
+        pytypeobj->tp_userdata = cls;
         PyType_Ready(pytypeobj);
         Py_INCREF(pytypeobj);
-        PyModule_AddObject(m, obj->name, (PyObject*)pytypeobj);
+        PyModule_AddObject(m, cls->name, (PyObject*)pytypeobj);
     }
     s_python_init_index++;
     return m;
@@ -286,7 +274,7 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
         {
             QFunction* func = mod->functions->Element(j);
             s_python_methods[funcIndex] = {
-                func->func_module->name, reinterpret_cast<PyCFunction>(func->func_module), METH_QSCRIPT, ""
+                func->func_module->name, reinterpret_cast<PyCFunction>(func), METH_QSCRIPT, ""
             };
             funcIndex++;
         }
@@ -307,30 +295,35 @@ void CPythonInterface::ImportModules(CUtlVector<QModule*>* modules)
     }
 }
 
-QScriptReturn CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
+QReturn CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
 {
+    QReturn ret;
+    ret.type = QType_None;
+    ret.value.value_int = 0;
     if (args->count)
     {
         PyObject* v = PyTuple_New(args->count);
         for (int i = 0; i != args->count; i++)
         {
-            switch (args->types[i])
+            QArg arg = args->args[i];
+            QValue val = arg.val;
+            switch (arg.type)
             {
             case 'i':
-                PyTuple_SET_ITEM(v, i, PyLong_FromLong((int)args->args[i]));
+                PyTuple_SET_ITEM(v, i, PyLong_FromLong(val.value_int));
                 break;
             case 's':
-                PyTuple_SET_ITEM(v, i, PyUnicode_FromString((const char*)args->args[i]));
+                PyTuple_SET_ITEM(v, i, PyUnicode_FromString(val.value_string));
                 break;
             case 'f':
-                PyTuple_SET_ITEM(v, i, PyFloat_FromDouble((double)(*(float*)&args->args[i])));
+                PyTuple_SET_ITEM(v, i, PyFloat_FromDouble((double)val.value_float));
                 break;
             case 'b':
-                PyTuple_SET_ITEM(v, i, PyBool_FromLong((bool)(args->args[i])));
+                PyTuple_SET_ITEM(v, i, PyBool_FromLong(val.value_bool));
                 break;
             default:
                 Py_DECREF(v);
-                return;
+                return ret;
             }
         }
         PyObject_Call((PyObject*)callback->callback, v,NULL);
@@ -338,7 +331,7 @@ QScriptReturn CPythonInterface::CallCallback(QCallback* callback, QArgs* args)
     }
     else
         PyObject_Call((PyObject*)callback->callback, NULL, NULL);
-    
+    return ret;
 }
 
 
