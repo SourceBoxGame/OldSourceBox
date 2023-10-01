@@ -100,17 +100,7 @@ void sq_seterrorhandler(HSQUIRRELVM v)
         v->Pop();
     }
 }
-/*
-void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err)
-{
-    SQObject o = stack_get(v, -1);
 
-    if (err->func && err->native) {
-        v->_errorhandler = o;
-        v->Pop();
-    }
-}
-*/
 void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc)
 {
 

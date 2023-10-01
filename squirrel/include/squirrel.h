@@ -207,7 +207,7 @@ typedef struct tagSQFunctionInfo {
 SQUIRREL_API HSQUIRRELVM sq_open(SQInteger initialstacksize);
 SQUIRREL_API HSQUIRRELVM sq_newthread(HSQUIRRELVM friendvm, SQInteger initialstacksize);
 SQUIRREL_API void sq_seterrorhandler(HSQUIRRELVM v);
-SQUIRREL_API void sq_seterrorhandlertwo(HSQUIRRELVM v, QFunction* err);
+SQUIRREL_API void sq_seterrorhandlertwo(HSQUIRRELVM v, SQObject* err);
 SQUIRREL_API void sq_seterrorfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc);
 SQUIRREL_API void sq_seterrorcallstackfunc(HSQUIRRELVM v, SQPRINTFUNCTION errfunc);
 SQUIRREL_API void sq_close(HSQUIRRELVM v);

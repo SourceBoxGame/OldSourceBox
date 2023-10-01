@@ -15,7 +15,7 @@ def configure(conf):
 	return
 
 def build(bld):
-	source = ["squirrelinterface.cpp"]
+	source = ["squirrelinterface.cpp", "squirrel_base_funcs.cpp"]
 	
 
 	includes = [

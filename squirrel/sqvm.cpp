@@ -128,9 +128,13 @@ SQInteger sq_typefunc(HSQUIRRELVM v)
 SQInteger compilestring(HSQUIRRELVM v)
 {
     SQInteger nargs = sq_gettop(v);
-    const SQChar* src = NULL, * name = _SC("unnamedbuffer");
+
+    const SQChar* varname = sq_getlocal(v, 0, 0);
+
+    const SQChar* src = NULL;
     SQInteger size;
     sq_getstring(v, 2, &src);
+    const SQChar* name = _SC(src);
     size = sq_getsize(v, 2);
     if (nargs > 2) {
         sq_getstring(v, 3, &name);

@@ -12,6 +12,8 @@
 #include "qscript/qscript.h"
 #include "../squirrel/include/squirrel.h"
 #include "../squirrel/include/sqstdstring.h"
+#include "../squirrel/include/sqstdio.h"
+#include "../squirrel/include/sqstdblob.h"
 #include "sqvm.h"
 #include "utlvector.h"
 #include "convar.h"
@@ -21,6 +23,7 @@
 #include "../squirrel/include/sqstdmath.h"
 
 #include "squirrelinterface.hpp"
+#include "squirrel_base_funcs.hpp"
 
 IFileSystem* g_pFullFileSystem = 0;
 IQScript* qscript = 0;
@@ -84,7 +87,7 @@ QInstance* CSquirrelInterface::LoadMod(QMod* mod, const char* path)
 
     if (g_pFullFileSystem->ReadFile(path, NULL, *codebuffer))
         return ExecuteSquirrel(mod, (const char*)(codebuffer->Base()), codebuffer->PeekStringLength());
-}
+}   
 
 void dumpstack(HSQUIRRELVM SQ) {
     int top = sq_gettop(SQ);
@@ -169,35 +172,55 @@ void emptyprintl(HSQUIRRELVM SQ, const SQChar* str, ...)
 {
     Msg("%s\n", str);
 }
+*/
+
 
 void base_commands(HSQUIRRELVM SQ)
 {
 
-    DECLARE_SQUIRREL_FUNCTION(print, "print", "s", false, SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_print, "print", SQ)
     //DECLARE_SQUIRREL_FUNCTION(sq_printf, "printf", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(printl, "printl", "s", false, SQ)
-    DECLARE_SQUIRREL_FUNCTION(warning, "warning", "s", false, SQ)
-    DECLARE_SQUIRREL_FUNCTION(error, "error", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(_string_format, "format", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(Squirrel_assert, "assert", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(suspend, "suspend", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(callee, "callee", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(sq_typefunc, "type", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(compilestring, "compilestring", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(newthread, "newthread", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(getstackinfos, "getstackinfos", "s", true, SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_printl, "printl", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_warning, "warning", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_error, "error", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_format, "format", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_assert, "assert", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_suspend, "suspend", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_callee, "callee", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_typefunc_func, "type", SQ)
+    DECLARE_SQUIRREL_FUNCTION(sq_compilestring, "compilestring", SQ)
+    DECLARE_SQUIRREL_FUNCTION(getstackinfos, "getstackinfos", SQ)
+    DECLARE_SQUIRREL_FUNCTION(getroottable, "getroottables", SQ)
+    DECLARE_SQUIRREL_FUNCTION(getconsttable, "getconsttable", SQ)
+    DECLARE_SQUIRREL_FUNCTION(setroottable, "setroottable", SQ)
+    DECLARE_SQUIRREL_FUNCTION(setconsttable, "setconsttable", SQ)
 
-    sq_setprintfunc(SQ, emptyprintl, errfunc);
-    sq_seterrorcallstackfunc(SQ, errCBfunc);
+    sq_setprintfunc(SQ, sq_printl_err, sq_error_err);
+    sq_seterrorcallstackfunc(SQ, sq_error_callstack_err);
+    sqstd_seterrorhandlers(SQ);
 
-    DECLARE_SQUIRREL_FUNCTION(getroottable, "getroottable", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(getconsttable, "getconsttable", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(setroottable, "setroottable", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(setconsttable, "setconsttable", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(warning, "warning", "s", false, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(error, "error", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(_string_format, "format", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(Squirrel_assert, "assert", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(suspend, "suspend", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(callee, "callee", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(sq_typefunc, "type", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(compilestring, "compilestring", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(newthread, "newthread", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(getstackinfos, "getstackinfos", "s", true, SQ)
+
+    //sq_setprintfunc(SQ, emptyprintl, errfunc);
+    //sq_seterrorcallstackfunc(SQ, errCBfunc);
+
+    //DECLARE_SQUIRREL_FUNCTION(getroottable, "getroottable", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(getconsttable, "getconsttable", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(setroottable, "setroottable", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(setconsttable, "setconsttable", "s", true, SQ)
 
 #ifndef NO_GARBAGE_COLLECTOR
-    DECLARE_SQUIRREL_FUNCTION(collectgarbage, "collectgarbage", "s", true, SQ)
-    DECLARE_SQUIRREL_FUNCTION(resurectureachable, "resurectureachable", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(collectgarbage, "collectgarbage", "s", true, SQ)
+    //DECLARE_SQUIRREL_FUNCTION(resurectureachable, "resurectureachable", "s", true, SQ)
 #endif
 
 
@@ -210,8 +233,15 @@ void base_commands(HSQUIRRELVM SQ)
     DECLARE_SQUIRREL_VARIABLE_STRING("\n", "_endl_", SQ)
 
 
+    //other
+    sqstd_register_iolib(SQ);
+    sqstd_register_mathlib(SQ);
+    sqstd_register_bloblib(SQ);
+
 }
-*/
+
+
+
 struct SQ_Userdata
 {
     union {
@@ -884,8 +914,8 @@ QInstance* CSquirrelInterface::ExecuteSquirrel(QMod* mod, const char* code, int 
         sq_newslot(SQ, -3, false);
     }
 
-    
-    sqstd_register_mathlib(SQ);
+
+    base_commands(SQ);
 
     if (SQ_FAILED(sq_call(SQ, 1,false,true)))
     {
@@ -895,16 +925,13 @@ QInstance* CSquirrelInterface::ExecuteSquirrel(QMod* mod, const char* code, int 
             const SQChar *str;
             sq_getstring(SQ, -1, &str);
             Warning("[Squirrel]: %s\n", str);
-
-            //SQInteger level;
-            //sq_getinteger(SQ, -1, &level);
-            //write_callstack(SQ, level);
-
-            //sqstd_printcallstack(SQ);
         }
         sq_poptop(SQ);
     }
     sq_settop(SQ, 0);
+
+    sq_collectgarbage(SQ);
+
     return ins;
 }
 

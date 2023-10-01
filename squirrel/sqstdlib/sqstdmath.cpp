@@ -39,28 +39,16 @@ static SQInteger math_abs(HSQUIRRELVM v)
     return 1;
 }
 
-int sq_RandomInteger(int min, int max)
+SQInteger sq_srand(HSQUIRRELVM v)
 {
-    return RandomInt(min, max);
+    SQInteger i1;
+    sq_getinteger(v, 2, &i1);
+    RandomSeed(i1);
+    return 0;
 }
 
-int sq_srand()
-{
-    return RandomInt(0, RAND_MAX);
-}
 
-
-float sq_srandf()
-{
-    return RandomFloat(0, RAND_MAX);
-}
-
-void sq_randseed(float seed)
-{
-    RandomSeed(seed);
-}
-
-SQInteger sq_map(HSQUIRRELVM v)
+SQInteger sq_remap(HSQUIRRELVM v)
 {
     SQFloat p1, p2, p3, p4, p5; 
     sq_getfloat(v, 2, &p1); 
@@ -89,10 +77,7 @@ SINGLE_ARG_FUNC(floor)
 SINGLE_ARG_FUNC(ceil)
 SINGLE_ARG_FUNC(exp)
 
-TWO_ARGS_FUNC(sq_RandomInteger)
-
-_FUNC(sq_srand)
-_FUNC(sq_srandf)
+//SINGLE_ARG_VOID_FUNC(sq_srand)
 _FUNC(rand)
 //SINGLE_ARG_VOID_FUNC(sq_randseed)
 
@@ -150,15 +135,12 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
     DECL_FUNC_MATH(floor, "floor", v)
     DECL_FUNC_MATH(ceil, "ceil", v)
     DECL_FUNC_MATH(exp, "exp", v)
-    DECL_FUNC_MATH(sq_srand, "srand", v)
-    DECL_FUNC_MATH(sq_srandf, "srandf", v)
     DECL_FUNC_MATH(rand, "rand", v)
     DECL_FUNC_MATH(fabs, "fabs", v)
     DECL_FUNC_MATH(abs, "abs", v)
-    DECL_FUNC_MATH(sq_RandomInteger, "randi", v)
-    //DECL_FUNC_MATH(sq_randseed, "randseed", v)
 
-    INIT_SQUIRREL_FUNCTION(sq_map, "map", v)
+    INIT_SQUIRREL_FUNCTION(sq_remap, "remap", v)
+    INIT_SQUIRREL_FUNCTION(sq_srand, "srand", v)
 
     DECLARE_SQUIRREL_VARIABLE_INTEGER(RAND_MAX, "RAND_MAX", v)
     DECLARE_SQUIRREL_VARIABLE_FLOAT(M_PI, "PI", v)
