@@ -93,7 +93,7 @@ bool CQScript::Connect(CreateInterfaceFn factory)
     g_pFullFileSystem = (IFileSystem*)factory(FILESYSTEM_INTERFACE_VERSION, NULL);
     AddScriptingInterface("luainterface" DLL_EXT_STRING, factory);
     AddScriptingInterface("squirrelinterface" DLL_EXT_STRING, factory);
-    AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
+    //AddScriptingInterface("pythoninterface" DLL_EXT_STRING, factory);
     return true;
 }
 
@@ -661,4 +661,52 @@ void CQScript::CallFunctionEx(QScriptFunction function, QArgs* args)
     case QFunction_Void:
         break;
     }
+}
+
+QReturn CQScript::RetNone()
+{
+    QReturn ret;
+    ret.type = QType_None;
+    ret.value.value_int = 0;
+    return ret;
+}
+
+QReturn CQScript::RetInt(int val)
+{
+    QReturn ret;
+    ret.type = QType_Int;
+    ret.value.value_int = val;
+    return ret;
+}
+
+QReturn CQScript::RetFloat(float val)
+{
+    QReturn ret;
+    ret.type = QType_Float;
+    ret.value.value_float = val;
+    return ret;
+}
+
+QReturn CQScript::RetStr(const char* str)
+{
+    QReturn ret;
+    ret.type = QType_String;
+    ret.value.value_string = str;
+    return ret;
+}
+
+QReturn CQScript::RetObj(QScriptObject obj)
+{
+    QReturn ret;
+    ret.type = QType_Object;
+    ret.value.value_object = obj;
+    return ret;
+}
+
+QReturn CQScript::RetFunc(QScriptFunction func)
+{
+    QReturn ret;
+    ret.type = QType_Function;
+    ret.value.value_function = func;
+    return ret;
 }

@@ -90,7 +90,7 @@ projects={
 		'lua',
 		'luainterface',
 		'squirrel',
-		'squirrelinterface',
+		'squirrelinterface'
 		#'pythoninterface'
 		#'vscript'
 	],
@@ -163,8 +163,27 @@ projects={
 		'utils/updater',
 		'utils/updater_launcher'
 	]
+	
 }
-
+""",
+	'wikieditor':[
+		'tier0',
+		'tier1',
+		'tier2',
+		'tier3',
+		'vgui2/vgui_controls',
+		'vgui2/src',
+		'vstdlib',
+		'filesystem',
+		'vpklib',
+		'inputsystem',
+		'vgui2/matsys_controls',
+		'vgui2/vgui_surfacelib',
+		'appframework',
+		'stub_steam',
+		'utils/wikieditor',
+		'utils/wikieditor_launcher'
+	]"""
 @Configure.conf
 def check_pkg(conf, package, uselib_store, fragment, *k, **kw):
 	errormsg = '{0} not available! Install {0} development package. Also you may need to set PKG_CONFIG_PATH environment variable'.format(package)
@@ -200,6 +219,9 @@ def define_platform(conf):
 
 	if conf.options.UPDATER:
 		conf.define("UPDATER", 1)
+	
+	#if conf.options.WIKIEDITOR:
+	#	conf.define("WIKIEDITOR", 1)
 		
 	if conf.options.TESTS:
 		conf.define('UNITTESTS', 1)
@@ -300,6 +322,9 @@ def options(opt):
 	
 	grp.add_option('-u', '--updater', action = 'store_true', dest = 'UPDATER', default = False,
 		help = 'build the updater [default: %default]')
+		
+	#grp.add_option('-w', '--wikieditor', action = 'store_true', dest = 'WIKIEDITOR', default = False,
+	#	help = 'build the wiki editor [default: %default]')
 
 	grp.add_option('--use-sdl', action = 'store', dest = 'SDL', type = 'int', default = sys.platform != 'win32',
 		help = 'build engine with SDL [default: %default]')
@@ -615,13 +640,14 @@ def configure(conf):
 
 	check_deps( conf )
 	conf.env.UPDATER = conf.options.UPDATER
+	#conf.env.WIKIEDITOR = conf.options.WIKIEDITOR
 
 	# indicate if we are packaging for Linux/BSD
 	if conf.env.DEST_OS != 'android':
-		if conf.options.DEDICATED:
-			conf.env.LIBDIR = conf.env.PREFIX+('/updater' if conf.options.UPDATER else '/bin')+'_'+conf.env.DEST_OS.replace("32","64" if conf.options.ALLOW64 else "32")+'_srcds/'
+		if conf.options.DEDICATED: #else ('/wikieditor' if conf.options.WIKIEDITOR else '/bin')
+			conf.env.LIBDIR = conf.env.PREFIX+('/updater' if conf.options.UPDATER else "/bin")+'_'+conf.env.DEST_OS.replace("32","64" if conf.options.ALLOW64 else "32")+'_srcds/'
 		else:
-			conf.env.LIBDIR = conf.env.PREFIX+('/updater' if conf.options.UPDATER else '/bin')+'_'+conf.env.DEST_OS.replace("32","64" if conf.options.ALLOW64 else "32")+'/'
+			conf.env.LIBDIR = conf.env.PREFIX+('/updater' if conf.options.UPDATER else "/bin")+'_'+conf.env.DEST_OS.replace("32","64" if conf.options.ALLOW64 else "32")+'/'
 		conf.env.TESTDIR = conf.env.PREFIX+'/tests/'
 		conf.env.BINDIR = conf.env.PREFIX
 	else:
@@ -637,6 +663,8 @@ def configure(conf):
 		conf.add_subproject(projects['dedicated'])
 	elif conf.options.UPDATER:
 		conf.add_subproject(projects['updater'])
+	#elif conf.options.WIKIEDITOR:
+	#	conf.add_subproject(projects['wikieditor'])
 	else:
 		conf.add_subproject(projects['game'])
 
@@ -667,6 +695,8 @@ def build(bld):
 			sz_path = os.path.join('lib', bld.env.DEST_OS, bld.env.DEST_CPU, '7zxa.dll')
 			bld.install_files(bld.env.LIBDIR, [sdl_path,sz_path])
 		bld.add_subproject(projects['updater'])
+	#elif bld.env.WIKIEDITOR:
+	#	bld.add_subproject(projects['wikieditor'])
 	else:
 		if bld.env.TOGLES:
 			projects['game'] += ['togles']

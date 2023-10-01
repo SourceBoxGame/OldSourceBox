@@ -3,41 +3,41 @@
 #include "convar.h"
 #include "edict.h"
 extern CGlobalVars* gpGlobals;
-/*
 extern IQScript* qscript;
 
-QScriptReturn QScriptClientMsg(QScriptArgs args)
+
+QReturn QScriptClientMsg(QScriptArgs args)
 {
-	Msg("%s\n", qscript->GetArgString(args, 0));
+	Msg("%s\n", qscript->GetArgValue(args, 0).value_string);
 	return qscript->RetNone();
 }
 
-QScriptReturn RegisterCmd(QScriptArgs args)
+QReturn RegisterCmd(QScriptArgs args)
 {
-	new ConCommandQScript(qscript->GetArgPermaString(args, 0), qscript->GetArgCallback(args, 1));
+	new ConCommandQScript(qscript->GetArgValue(args, 0).value_string, qscript->GetArgValue(args, 1).value_function);
 	return qscript->RetNone();
 }
 
-QScriptReturn GetTick(QScriptArgs args)
+QReturn GetTick(QScriptArgs args)
 {
 	return qscript->RetInt(gpGlobals->tickcount);
 }
 
-QScriptReturn GetTime(QScriptArgs args)
+QReturn GetTime(QScriptArgs args)
 {
 	return qscript->RetFloat(gpGlobals->curtime);
 }
 
-QScriptReturn GetDelayInSeconds(QScriptArgs args)
+QReturn GetDelayInSeconds(QScriptArgs args)
 {
-	return qscript->RetFloat(gpGlobals->curtime + qscript->GetArgFloat(args,0));
+	return qscript->RetFloat(gpGlobals->curtime + qscript->GetArgValue(args,0).value_float);
 }
 
-QScriptReturn GetDelayInTicks(QScriptArgs args)
+QReturn GetDelayInTicks(QScriptArgs args)
 {
-	return qscript->RetFloat(gpGlobals->tickcount + qscript->GetArgInt(args, 0));
+	return qscript->RetFloat(gpGlobals->tickcount + qscript->GetArgValue(args, 0).value_int);
 }
-*/
+
 /*
 QScriptReturn CoolFunc(QScriptArgs args)
 {
@@ -52,6 +52,17 @@ QScriptReturn HudHintYEAAAH(QScriptArgs args)
 	return qscript->RetNone();
 }
 */
+
+
+static QModuleDefFunc sv_module[] = {
+	{QScriptClientMsg,"Msg",QType_None,"s"},
+	{RegisterCmd,"RegisterCmd",QType_None,"sp"},
+	{GetTick,"GetTick",QType_Int,""},
+	{GetTime,"GetTime",QType_Float,""},
+	{GetDelayInTicks,"GetDelayInTicks",QType_Int,"i"},
+	{GetDelayInSeconds,"GetDelayInSeconds",QType_Float,"f"},
+	{0,0,QType_None,0}
+};
 
 void InitQScriptServer()
 {
@@ -71,6 +82,8 @@ void InitQScriptServer()
 	QScriptObject obj = qscript->FinishObject(creator, "epicobject");
 	qscript->CreateModuleObject(mod, obj);
 	*/
+
+	QScriptModule mod = qscript->CreateModule("sv", (QModuleDefFunc*)&sv_module);
 }
 
 void LoadModsServer()
@@ -79,4 +92,8 @@ void LoadModsServer()
 	qscript->LoadMods("autorun_server");
 	qscript->LoadModsInDirectory("server", "cmds");
 	*/
+	qscript->LoadMods("sv_autorun");
+	qscript->LoadModsInDirectory("sv", "cmds");
 }
+
+

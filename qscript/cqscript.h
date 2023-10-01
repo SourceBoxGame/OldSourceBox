@@ -45,6 +45,12 @@ public:
 	virtual void InitializeObject(QScriptObject object);
 	virtual void CallFunction(QScriptFunction function, const char* fmt, ...);
 	virtual void CallFunctionEx(QScriptFunction function, QArgs* args);
+	virtual QReturn RetNone();
+	virtual QReturn RetInt(int val);
+	virtual QReturn RetFloat(float val);
+	virtual QReturn RetStr(const char* str);
+	virtual QReturn RetObj(QScriptObject obj);
+	virtual QReturn RetFunc(QScriptFunction func);
 private:
 	virtual void LoadFilesInDirectory(const char* modname,const char* folder, const char* filename);
 	void AddScriptingInterface(const char* name, CreateInterfaceFn factory);

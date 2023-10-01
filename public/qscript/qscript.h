@@ -43,6 +43,12 @@ public:
     virtual QType GetArgType(QScriptArgs args, int index) = 0;
     virtual void InitializeObject(QScriptObject object) = 0;
     virtual void CallFunction(QScriptFunction function, const char* fmt, ...) = 0;
+    virtual QReturn RetNone() = 0;
+    virtual QReturn RetInt(int val) = 0;
+    virtual QReturn RetFloat(float val) = 0;
+    virtual QReturn RetStr(const char* str) = 0;
+    virtual QReturn RetObj(QScriptObject obj) = 0;
+    virtual QReturn RetFunc(QScriptFunction func) = 0;
 };
 
 
