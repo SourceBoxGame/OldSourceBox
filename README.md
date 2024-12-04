@@ -1,3 +1,9 @@
+# Old source code
+
+This is an old source code that i (celisej) found on my disk. Im not sure how old it is. Im not sure if it compiles.
+
+## Next part of readme is old
+
 # SourceBox
 - Discord: [![Discord Server](https://img.shields.io/discord/1093917978522812457.svg)](https://discord.gg/Rb7Aw5UXb3)
 - Guilded: [![Guilded Server](https://shields.yoki-labs.xyz/shields/i/EAJRP752)](https://www.guilded.gg/i/EAJRP752)
